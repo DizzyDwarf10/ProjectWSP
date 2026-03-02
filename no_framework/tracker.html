@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Workout Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Workout Tracker</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="workouts.html">Workouts</a>
+      <a href="nutrition.html">Nutrition</a>
+      <a href="tracker.html">Tracker</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>Log Your Workout</h2>
+      <input id="exerciseInput" type="text" placeholder="Exercise name">
+      <input id="repsInput" type="number" placeholder="Reps">
+      <button onclick="addWorkout()">Add</button>
+
+      <ul id="workoutList"></ul>
+    </section>
+  </main>
+
+  
+  <footer>
+    <p>© 2026 Exercise Hub</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
