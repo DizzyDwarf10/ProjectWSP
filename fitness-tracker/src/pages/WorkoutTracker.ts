@@ -1,20 +1,18 @@
-<script setup lang="ts">
-import { ref } from "vue";
+import { defineStore } from "pinia"
+import { ref } from "vue"
+import type { WorkoutEntry } from "../types"
 
-const exercise = ref("");
-const reps = ref<number | null>(null);
+export const useWorkoutTrackerStore = defineStore("workoutTracker", () => {
+  const workouts = ref<WorkoutEntry[]>([])
 
-const workouts = ref<{ exercise: string; reps: number }[]>([]);
+  const addWorkout = (exercise: string, reps: number) => {
+    workouts.value.push({
+      id: Date.now(),
+      exercise,
+      reps,
+      date: new Date().toISOString()
+    })
+  }
 
-function addWorkout() {
-  if (!exercise.value || !reps.value) return;
-
-  workouts.value.push({
-    exercise: exercise.value,
-    reps: reps.value
-  });
-
-  exercise.value = "";
-  reps.value = null;
-}
-</script>
+  return { workouts, addWorkout }
+})
