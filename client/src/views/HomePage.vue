@@ -1,22 +1,22 @@
 <template>
-  <section class="section has-background-black-ter min-vh-100">
+  <section class="section has-background-black-ter" style="min-height: 100vh;">
     <div class="container">
-      <div class="box has-background-dark has-text-centered" style="max-width: 700px; margin: 2rem auto; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);">
+      <div class="box has-background-dark has-text-centered" style="max-width: 700px; margin: 2rem auto;">
         <h1 class="title is-2 has-text-white">
           <template v-if="isLoggedIn">Hello, {{ userName }}!</template>
           <template v-else>Hello</template>
         </h1>
         <p class="subtitle is-5 has-text-grey-light mb-5">Here's a summary of your activity.</p>
-        <div class="box has-background-black-ter p-5" style="box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);">
+        <div class="box has-background-black-ter p-5">
           <div class="has-text-left mb-4">
             <span class="title is-4 has-text-white">Recent Activity</span>
           </div>
           <div class="columns is-variable is-2 is-mobile">
             <div class="column" v-for="(item, idx) in summary" :key="idx">
-              <div class="box has-background-grey-darker has-text-centered p-4" style="border-radius: 12px;">
-                <div class="is-size-2 has-text-weight-bold has-text-white">{{ item.count }}</div>
-                <div class="is-size-6 has-text-grey-light mb-1">{{ item.label }}</div>
-                <div class="is-size-6 has-text-grey-lighter">{{ item.details }}</div>
+              <div class="box has-background-link-light has-text-centered p-4">
+                <div class="is-size-2 has-text-weight-bold has-text-link">{{ item.count }}</div>
+                <div class="is-size-6 has-text-link mb-1">{{ item.label }}</div>
+                <div class="is-size-6 has-text-link-light">{{ item.details }}</div>
               </div>
             </div>
           </div>
@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { currentUser } from '../pages/store';
+import { currentUser } from '../pages/user';
 import users from '../users/users.json';
 import workouts from '../users/workouts.json';
 
@@ -78,8 +78,3 @@ function getSummary() {
 const summary = computed(() => getSummary());
 </script>
 
-<style scoped>
-.min-vh-100 {
-  min-height: 100vh;
-}
-</style>

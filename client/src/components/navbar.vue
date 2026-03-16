@@ -42,13 +42,13 @@
         <div class="navbar-item">
           <div class="buttons">
             <template v-if="!currentUser">
-              <button class="button is-primary" @click="goToSignUp">
+              <button class="button is-link" @click="goToSignUp">
                 <span class="icon"><i class="fas fa-user-plus"></i></span>
                 <span>Sign Up</span>
               </button>
               <div class="dropdown is-right" :class="{ 'is-active': showDropdown }" @click="toggleDropdown" tabindex="0" @blur="closeDropdown">
                 <div class="dropdown-trigger">
-                  <button class="button is-light">
+                  <button class="button is-link">
                     <span class="icon"><i class="fas fa-sign-in-alt"></i></span>
                     <span>Login</span>
                   </button>
@@ -96,7 +96,7 @@
 import { RouterLink, useRouter } from "vue-router";
 import { ref, computed } from "vue";
 import users from "../users/users.json";
-import { currentUser, loginUser } from "../pages/store";
+import { currentUser, loginUser } from "../pages/user";
 
 const showDropdown = ref(false);
 const burgerActive = ref(false);

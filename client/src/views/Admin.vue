@@ -1,5 +1,5 @@
 <template>
-  <section class="section has-background-black-ter min-vh-100">
+  <section class="section has-background-black-ter" style="min-height: 100vh;">
     <div class="container">
       <div class="box has-background-dark" style="max-width: 900px; margin: 2rem auto;">
         <h1 class="title is-3 has-text-white has-text-centered">Admin Area</h1>
@@ -10,7 +10,7 @@
           <div class="mb-5">
             <h2 class="title is-5 has-text-white">User Management</h2>
             <button class="button is-primary mb-3" @click="showAddUser = true">Add User</button>
-            <table class="table is-fullwidth is-striped is-hoverable">
+            <table class="table is-fullwidth is-striped is-hoverable is-primary">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -31,7 +31,7 @@
             </table>
           </div>
           <div v-if="showAddUser || editingUser">
-            <div class="box has-background-black-ter">
+            <div class="box has-background-link">
               <h3 class="title is-6 has-text-white">{{ editingUser ? 'Edit User' : 'Add User' }}</h3>
               <form @submit.prevent="saveUser">
                 <div class="field">
@@ -71,9 +71,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import usersData from '../users/users.json';
-import { currentUser } from '../pages/store';
+import { currentUser } from '../pages/user';
 
-// Define User type to match users.json
 interface User {
   id: number;
   name: string;
@@ -85,7 +84,7 @@ interface User {
 const isAdmin = computed(() => (currentUser.value as any) && (currentUser.value as any).role === 'admin');
 const usersList = ref<User[]>([...usersData]);
 const showAddUser = ref(false);
-const editingUser = ref<User|null>(null);
+const editingUser = ref<User | null>(null);
 const userForm = ref<Omit<User, 'id'>>({ name: '', role: 'user', friends: [], profilePicture: '' });
 
 function editUser(user: User) {
@@ -115,9 +114,3 @@ function cancelEdit() {
   userForm.value = { name: '', role: 'user', friends: [], profilePicture: '' };
 }
 </script>
-
-<style scoped>
-.min-vh-100 {
-  min-height: 100vh;
-}
-</style>

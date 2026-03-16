@@ -1,11 +1,11 @@
+
 {
   "name": "projectwsp-root",
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "cd fitness-tracker && npm run dev",
-    "build": "cd fitness-tracker && npm run build",
-    "preview": "cd fitness-tracker && npm run preview"
+    "dev": "cd client && npm run dev",
+    "build": "cd client && npm run build"
   },
   "devDependencies": {
     "vite": "^5.4.21"

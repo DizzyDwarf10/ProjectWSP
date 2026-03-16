@@ -1,5 +1,5 @@
 <template>
-  <section class="section has-background-black-ter min-vh-100">
+  <section class="section has-background-black-ter" style="min-height: 100vh;">
     <div class="container">
       <div class="box has-background-dark" style="max-width: 900px; margin: 2rem auto;">
         <h1 class="title is-3 has-text-white has-text-centered">My Activity</h1>
@@ -41,20 +41,25 @@
           </div>
           <div class="field is-grouped is-grouped-centered mt-4">
             <div class="control">
-              <button class="button is-primary" type="submit">Add Workout</button>
+              <button class="button is-link" type="submit">Add Workout</button>
             </div>
           </div>
         </form>
         <h2 class="title is-4 has-text-white has-text-centered mt-5">My Workouts</h2>
         <ul>
-          <li v-for="(workout, idx) in userWorkoutsSorted" :key="workout.id || idx" class="workout-item-centered mb-4">
-            <div class="workout-content workout-purple wide-card">
+          <li v-for="(workout, idx) in userWorkoutsSorted" :key="workout.id || idx" class="mb-4">
+            <div class="box has-background-link has-text-centered">
               <strong class="has-text-white">{{ workout.type }}</strong>
               <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
               <span v-if="workout.time" class="has-text-grey-light">&nbsp;— Time: {{ workout.time }} min</span>
               <span v-if="workout.distance" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distance }} km</span>
               <span v-if="workout.dateTime" class="has-text-grey-light">&nbsp;— {{ new Date(workout.dateTime).toLocaleString() }}</span>
-              <span v-if="workout.photo"><br><img :src="workout.photo" alt="workout photo" class="workout-photo-centered-large mt-2"></span>
+              <span v-if="workout.photo">
+                <br>
+                <figure class="image is-192x192 mt-2" style="margin:auto; width:192px; height:192px; overflow: hidden;">
+                  <img :src="workout.photo" alt="workout photo" style="border-radius:10px; width:192px; height:192px; object-fit: cover; display: block;" />
+                </figure>
+              </span>
               <div class="buttons mt-3">
                 <button class="button is-small is-info mr-2" @click="startEdit(idx)">Edit</button>
                 <button class="button is-small is-danger" @click="deleteWorkout(workout)">Delete</button>
@@ -122,7 +127,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { currentUser } from '../pages/store';
+import { currentUser } from '../pages/user';
 import workoutsData from '../utils/getWorkouts';
 
 const workoutTypes = [
@@ -160,7 +165,6 @@ const workoutPhotos: Record<string, string> = {
 const allWorkouts = ref<any[]>([]);
 
 onMounted(() => {
-  // Load all workouts into a reactive array on mount
   allWorkouts.value = workoutsData.map(w => ({ ...w }));
 });
 
@@ -218,37 +222,3 @@ function deleteWorkout(workout: any) {
   }
 }
 </script>
-
-<style scoped>
-.min-vh-100 {
-  min-height: 100vh;
-}
-.workout-item-centered {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-.workout-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.2em 1.5em;
-  border-radius: 12px;
-}
-.workout-purple {
-  background: linear-gradient(135deg, #7c3aed 80%, #a78bfa 100%);
-  box-shadow: 0 2px 8px 0 rgba(124,58,237,0.15);
-}
-.workout-photo-centered-large {
-  max-width: 180px;
-  border-radius: 10px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-.wide-card {
-  width: 100%;
-  max-width: 700px;
-}
-</style>
