@@ -117,7 +117,7 @@ function selectUser(user: any) {
 function logoutUser() {
   loginUser(null);
 }
-const isAdmin = computed(() => currentUser.value && currentUser.value.role === 'admin');
+const isAdmin = computed(() => (currentUser.value as any) && (currentUser.value as any).role === 'admin');
 </script>
 
 <style scoped>

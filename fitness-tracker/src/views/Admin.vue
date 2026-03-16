@@ -14,7 +14,6 @@
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Email</th>
                   <th>Role</th>
                   <th>Actions</th>
                 </tr>
@@ -22,7 +21,6 @@
               <tbody>
                 <tr v-for="user in usersList" :key="user.id">
                   <td>{{ user.name }}</td>
-                  <td>{{ user.email }}</td>
                   <td>{{ user.role }}</td>
                   <td>
                     <button class="button is-small is-info mr-2" @click="editUser(user)">Edit</button>
@@ -40,12 +38,6 @@
                   <label class="label has-text-white">Name</label>
                   <div class="control">
                     <input class="input" v-model="userForm.name" required />
-                  </div>
-                </div>
-                <div class="field">
-                  <label class="label has-text-white">Email</label>
-                  <div class="control">
-                    <input class="input" v-model="userForm.email" required />
                   </div>
                 </div>
                 <div class="field">
@@ -81,35 +73,46 @@ import { ref, computed } from 'vue';
 import usersData from '../users/users.json';
 import { currentUser } from '../pages/store';
 
-const isAdmin = computed(() => currentUser.value && currentUser.value.role === 'admin');
-const usersList = ref([...usersData]);
-const showAddUser = ref(false);
-const editingUser = ref(null);
-const userForm = ref({ name: '', email: '', role: 'user' });
+// Define User type to match users.json
+interface User {
+  id: number;
+  name: string;
+  role: string;
+  friends: number[];
+  profilePicture: string;
+}
 
-function editUser(user: any) {
+const isAdmin = computed(() => (currentUser.value as any) && (currentUser.value as any).role === 'admin');
+const usersList = ref<User[]>([...usersData]);
+const showAddUser = ref(false);
+const editingUser = ref<User|null>(null);
+const userForm = ref<Omit<User, 'id'>>({ name: '', role: 'user', friends: [], profilePicture: '' });
+
+function editUser(user: User) {
   editingUser.value = user;
-  userForm.value = { ...user };
+  userForm.value = { name: user.name, role: user.role, friends: user.friends, profilePicture: user.profilePicture };
   showAddUser.value = false;
 }
 function deleteUser(id: number) {
   usersList.value = usersList.value.filter(u => u.id !== id);
 }
 function saveUser() {
-  if (editingUser.value) {
-    const idx = usersList.value.findIndex(u => u.id === editingUser.value.id);
-    if (idx !== -1) usersList.value[idx] = { ...userForm.value, id: editingUser.value.id };
+  if (editingUser.value !== null) {
+    const idx = usersList.value.findIndex(u => u.id === editingUser.value!.id);
+    if (idx !== -1) {
+      usersList.value[idx] = { ...userForm.value, id: editingUser.value!.id };
+    }
     editingUser.value = null;
   } else {
     usersList.value.push({ ...userForm.value, id: Date.now() });
   }
-  userForm.value = { name: '', email: '', role: 'user' };
+  userForm.value = { name: '', role: 'user', friends: [], profilePicture: '' };
   showAddUser.value = false;
 }
 function cancelEdit() {
   editingUser.value = null;
   showAddUser.value = false;
-  userForm.value = { name: '', email: '', role: 'user' };
+  userForm.value = { name: '', role: 'user', friends: [], profilePicture: '' };
 }
 </script>
 

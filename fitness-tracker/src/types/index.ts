@@ -1,17 +1,18 @@
-export interface User {
+export type User = {
   id: number;
   name: string;
-  email: string;
-  password: string;
-  profilePic: string;
-}
+  friends: number[];
+  role?: "admin" | "user";
+  profilePicture?: string;
+};
 
-export interface Workout {
+export type Workout = {
   id: number;
   userId: number;
-  type: string;
-  duration: number;
-  calories: number;
-  date: string;
-  notes?: string;
-}
+  title: string;
+  description?: string;
+  durationMinutes: number;
+  distanceKm?: number;
+  date: string; 
+  picture?: string;
+};

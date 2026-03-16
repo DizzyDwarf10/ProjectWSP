@@ -5,15 +5,23 @@ import type { Workout } from "../types";
 export const useWorkoutTrackerStore = defineStore("workoutTracker", () => {
   const workouts = ref<Workout[]>([]);
 
-  const addWorkout = (type: string, duration: number, calories: number, notes?: string) => {
+  const addWorkout = (
+    title: string,
+    durationMinutes: number,
+    date: string,
+    description?: string,
+    distanceKm?: number,
+    picture?: string
+  ) => {
     workouts.value.push({
       id: Date.now(),
-      userId: 0, // Set appropriately in your app
-      type,
-      duration,
-      calories,
-      date: new Date().toISOString(),
-      notes
+      userId: 0, // Set appropriately in real use
+      title,
+      durationMinutes,
+      date,
+      description,
+      distanceKm,
+      picture
     });
   };
 
