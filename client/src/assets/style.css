@@ -59,3 +59,38 @@ h1,
 h2 {
   font-family: var(--heading);
 }
+
+@media (max-width: 600px) {
+  body {
+    font-size: 15px;
+    padding: 0 8px;
+  }
+  h1 {
+    font-size: 1.5em;
+    margin: 0.5em 0;
+  }
+  h2 {
+    font-size: 1.2em;
+    margin: 0.4em 0;
+  }
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 8px 0;
+  }
+  .container, .content, .main {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, .button {
+    width: 100%;
+    font-size: 1em;
+    margin-bottom: 8px;
+  }
+}
