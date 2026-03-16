@@ -1,6 +1,6 @@
 <template>
-  <nav class="navbar is-fixed-top" style="background: #181028; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
-    <div class="navbar-brand" style="display: flex; align-items: center;">
+  <nav class="navbar is-info" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
       <a role="button" class="navbar-burger" :class="{ 'is-active': burgerActive }" aria-label="menu" aria-expanded="false" @click="burgerActive = !burgerActive">
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
@@ -55,31 +55,32 @@
                 </div>
                 <div class="dropdown-menu">
                   <div class="dropdown-content">
-                    <a v-for="user in users" :key="user.id" class="dropdown-item" @click.stop="selectUser(user)">
-                      <img :src="user.profilePicture" class="profile-pic" style="margin-right:8px;" />
-                      {{ user.name }}
+                    <a v-for="user in users" :key="user.id" class="dropdown-item is-flex is-align-items-center" @click.stop="selectUser(user)">
+                      <img :src="user.profilePicture" class="image is-32x32 mr-3 is-rounded" />
+                      <span class="is-size-5 has-text-weight-semibold">{{ user.name }}</span>
                     </a>
                   </div>
                 </div>
               </div>
             </template>
             <template v-else>
-              <img :src="(currentUser as any).profilePicture" class="profile-pic user-pic" style="margin-right:8px;" />
-              <span class="user-name has-text-white" style="margin-right:8px;">{{ (currentUser as any).name }}</span>
-              <button class="button is-danger" @click="logoutUser">
-                <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
-                <span>Log out</span>
-              </button>
+              <div class="is-flex is-align-items-center">
+                <img :src="(currentUser as any).profilePicture" class="image is-60x50 mr-3 is-rounded" />
+                <span class="is-size-5 has-text-weight-semibold has-text-white mr-3">{{ (currentUser as any).name }}</span>
+                <button class="button is-danger" @click="logoutUser">
+                  <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                  <span>Log out</span>
+                </button>
+              </div>
             </template>
           </div>
         </div>
-        <div class="navbar-item" style="display: flex; align-items: center;">
+        <div class="navbar-item">
           <a
             href="https://twitter.com/intent/tweet?text=Check%20out%20this%20awesome%20fitness%20tracker!"
             target="_blank"
             rel="noopener noreferrer"
-            class="button is-info"
-            style="margin-left: 12px; display: flex; align-items: center;"
+            class="button is-black ml-3 is-flex is-align-items-center"
           >
             <span class="icon">
               <i class="fab fa-twitter"></i>
@@ -120,42 +121,3 @@ function logoutUser() {
 const isAdmin = computed(() => (currentUser.value as any) && (currentUser.value as any).role === 'admin');
 </script>
 
-<style scoped>
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 44px;
-  min-height: 44px;
-  background: #181028 !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  z-index: 1000;
-  padding: 0 18px;
-}
-.navbar-item {
-  display: flex;
-  align-items: center;
-  height: 44px;
-}
-.profile-pic {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #7f53ac;
-}
-.user-pic {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #10b981;
-}
-.user-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #fff;
-  margin-right: 6px;
-}
-</style>

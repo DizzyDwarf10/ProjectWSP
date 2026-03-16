@@ -5,17 +5,8 @@ import NavBar from './components/navbar.vue';
 
 <template>
   <NavBar />
-  <div class="app-main-container">
+  <div class="section has-background-dark" style="padding-top: 44px; min-height: 100vh; overflow-x: hidden;">
     <RouterView />
   </div>
 </template>
 
-<style scoped>
-.app-main-container {
-  padding-top: 44px;
-  background: #181028;
-  min-height: 100vh;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-</style>
