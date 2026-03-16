@@ -1,38 +1,48 @@
-import { createRouter, createWebHistory } from 'vue-router'
-
-import IndexList from '../views/IndexList.vue'
-import WorkoutTracker from '../views/WorkoutTracker.vue'
-import ContactList from '../views/ContactList.vue'
+import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
+      redirect: '/HomePage',
+    },
+    {
+      path: '/HomePage',
       name: 'home',
-      component: IndexList,
+      component: () => import('../views/HomePage.vue'),
     },
     {
-      path: '/workouts',
-      name: 'workouts',
-      component: () => import('../views/WorkoutTypes.vue'),
+      path: '/FriendsActivity',
+      name: 'friendsactivity',
+      component: () => import('../views/FriendsActivity.vue'),
     },
     {
-      path: '/nutrition',
-      name: 'nutrition',
-      component: () => import('../views/NutritionList.vue'),
+      path: '/StatisticsPage',
+      name: 'statistics',
+      component: () => import('../views/StatisticsPage.vue'),
     },
     {
-      path: '/tracker',
-      name: 'tracker',
-      component: WorkoutTracker,
+      path: '/MyActivity',
+      name: 'myactivity',
+      component: () => import('../views/MyActivity.vue'),
     },
     {
-      path: '/contact',
-      name: 'contact',
-      component: ContactList,
-    }
+      path: '/SignUp',
+      name: 'signup',
+      component: () => import('../views/SignUp.vue'),
+    },
+    {
+      path: '/Admin',
+      name: 'admin',
+      component: () => import('../views/Admin.vue'),
+    },
+    {
+      path: '/PeopleSearch',
+      name: 'peoplesearch',
+      component: () => import('../views/PeopleSearch.vue'),
+    },
   ],
-})
+});
 
-export default router
+export default router;

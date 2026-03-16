@@ -1,5 +1,27 @@
-# Vue 3 + TypeScript + Vite
+# Fitness Tracker
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+A modern fitness tracker app built with Vue 3, Vite, Pinia, Bulma, and FontAwesome.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Features
+- User login/logout
+- Track workouts and nutrition
+- View friends' activity
+- Clean, responsive UI
+
+## Project Setup
+
+Install dependencies:
+
+    npm install
+
+Start development server:
+
+    npm run dev
+
+Build for production:
+
+    npm run build
+
+Preview production build:
+
+    npm run preview
