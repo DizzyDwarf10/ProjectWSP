@@ -15,7 +15,7 @@ export const useWorkoutTypesStore = defineStore("workoutTypes", () => {
       const data = await res.json();
       workoutTypes.value = data.map((name: string, index: number) => ({
         id: index + 1,
-        userId: 0, // Set appropriately in your app
+        userId: 0, 
         type: name,
         duration: 0,
         calories: 0,

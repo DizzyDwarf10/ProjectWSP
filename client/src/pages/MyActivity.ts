@@ -15,7 +15,7 @@ export const useWorkoutTrackerStore = defineStore("workoutTracker", () => {
   ) => {
     workouts.value.push({
       id: Date.now(),
-      userId: 0, // Set appropriately in real use
+      userId: 0, 
       title,
       durationMinutes,
       date,
