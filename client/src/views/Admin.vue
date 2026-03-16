@@ -9,7 +9,7 @@
         <div v-else>
           <div class="mb-5">
             <h2 class="title is-5 has-text-white">User Management</h2>
-            <button class="button is-primary mb-3" @click="showAddUser = true">Add User</button>
+            <button class="button is-link mb-3" @click="showAddUser = true">Add User</button>
             <table class="table is-fullwidth is-striped is-hoverable is-primary">
               <thead>
                 <tr>
@@ -31,7 +31,7 @@
             </table>
           </div>
           <div v-if="showAddUser || editingUser">
-            <div class="box has-background-link">
+            <div class="box has-background-dark">
               <h3 class="title is-6 has-text-white">{{ editingUser ? 'Edit User' : 'Add User' }}</h3>
               <form @submit.prevent="saveUser">
                 <div class="field">
@@ -53,7 +53,7 @@
                 </div>
                 <div class="field is-grouped mt-4">
                   <div class="control">
-                    <button class="button is-success" type="submit">Save</button>
+                    <button class="button is-link" type="submit">Save</button>
                   </div>
                   <div class="control">
                     <button class="button is-light" type="button" @click="cancelEdit">Cancel</button>
