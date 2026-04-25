@@ -11,7 +11,9 @@ function mapUserRow(row) {
   };
 }
 
-async function createUser({ name, passwordHash, role = 'user', profilePicture = null }) {
+const DEFAULT_PROFILE_PICTURE = 'https://images.unsplash.com/photo-1672344048213-76b6e77304bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGR1bWJlbGx8ZW58MHx8MHx8fDA%3D';
+
+async function createUser({ name, passwordHash, role = 'user', profilePicture = DEFAULT_PROFILE_PICTURE }) {
   const result = await run(
     'INSERT INTO users (name, password_hash, role, profile_picture) VALUES (?, ?, ?, ?)',
     [name, passwordHash, role, profilePicture]
