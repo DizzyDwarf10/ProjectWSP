@@ -28,18 +28,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { currentUser } from '../pages/user';
-import users from '../users/users.json';
-import workouts from '../users/workouts.json';
+import { getMySummary } from '../api/services';
 
 const isLoggedIn = computed(() => !!currentUser.value);
-const user = computed(() => currentUser.value || users[0]);
+const user = computed(() => currentUser.value);
 const userName = computed(() => user.value?.name || 'User');
+const summaryData = ref({
+  totalActivities: 0,
+  totalMinutes: 0,
+  totalDistance: 0,
+  totalReps: 0
+});
 
-function getUserWorkouts() {
-  if (!isLoggedIn.value) return [];
-  return workouts.filter(w => w.userId === user.value.id);
+async function refreshSummary() {
+  if (!isLoggedIn.value) {
+    summaryData.value = {
+      totalActivities: 0,
+      totalMinutes: 0,
+      totalDistance: 0,
+      totalReps: 0
+    };
+    return;
+  }
+
+  const response = await getMySummary();
+  summaryData.value = response.summary;
 }
 
 function getSummary() {
@@ -51,29 +66,38 @@ function getSummary() {
       { label: 'This Year', count: 0, details: '' },
     ];
   }
-  const now = new Date();
-  const all = getUserWorkouts();
-  const today = all.filter(w => new Date(w.dateTime).toDateString() === now.toDateString());
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  const thisWeek = all.filter(w => new Date(w.dateTime) >= weekStart);
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thisMonth = all.filter(w => new Date(w.dateTime) >= monthStart);
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  const thisYear = all.filter(w => new Date(w.dateTime) >= yearStart);
-
-  function formatDetails(list: any[]) {
-    if (!list.length) return '';
-    return `${list.length * 6.0} km • ${list.length * 35} min`;
-  }
 
   return [
-    { label: 'Today', count: today.length, details: formatDetails(today) },
-    { label: 'This Week', count: thisWeek.length, details: formatDetails(thisWeek) },
-    { label: 'This Month', count: thisMonth.length, details: formatDetails(thisMonth) },
-    { label: 'This Year', count: thisYear.length, details: formatDetails(thisYear) },
+    {
+      label: 'Total Activities',
+      count: summaryData.value.totalActivities,
+      details: `${summaryData.value.totalReps} reps`
+    },
+    {
+      label: 'Total Minutes',
+      count: summaryData.value.totalMinutes,
+      details: `${summaryData.value.totalDistance.toFixed(2)} km`
+    },
+    {
+      label: 'Total Distance',
+      count: Number(summaryData.value.totalDistance.toFixed(2)),
+      details: 'all time'
+    },
+    {
+      label: 'Total Reps',
+      count: summaryData.value.totalReps,
+      details: 'all time'
+    },
   ];
 }
+
+watch(
+  () => currentUser.value?.id,
+  () => {
+    void refreshSummary();
+  },
+  { immediate: true }
+);
 
 const summary = computed(() => getSummary());
 </script>

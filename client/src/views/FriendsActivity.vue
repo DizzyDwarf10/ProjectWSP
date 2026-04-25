@@ -7,12 +7,12 @@
           <p class="has-text-grey-light">Please log in to see your friends activity.</p>
         </div>
         <div v-else>
-          <div v-if="friends.length === 0" class="has-text-centered">
+          <div v-if="orderedFriends.length === 0" class="has-text-centered">
             <p class="has-text-grey-light">You have no friends added.</p>
           </div>
           <div v-else>
             <div>
-              <div v-for="friend in friends" :key="friend.id">
+              <div v-for="friend in orderedFriends" :key="friend.id">
                 <div class="box has-background-black-ter mb-5" style="max-width: 900px; margin: 2rem auto;">
                   <div class="level mb-3">
                     <div class="level-item has-text-centered">
@@ -25,15 +25,15 @@
                   <ul v-if="friendWorkouts(friend.id).length">
                     <li v-for="(workout, idx) in friendWorkouts(friend.id)" :key="idx" class="mb-3">
                         <div class="box has-background-link has-text-centered">
-                          <strong class="has-text-white">{{ workout.type }}</strong>
+                          <strong class="has-text-white">{{ workout.exerciseTypeName }}</strong>
                           <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
-                          <span v-if="workout.time" class="has-text-grey-light">&nbsp;— Time: {{ workout.time }} min</span>
-                          <span v-if="workout.distance" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distance }} km</span>
-                          <span v-if="workout.dateTime" class="has-text-grey-light">&nbsp;— {{ new Date(workout.dateTime).toLocaleString() }}</span>
-                          <span v-if="workout.photo">
+                          <span v-if="workout.minutes" class="has-text-grey-light">&nbsp;— Time: {{ workout.minutes }} min</span>
+                          <span v-if="workout.distanceKm" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distanceKm }} km</span>
+                          <span v-if="workout.performedAt" class="has-text-grey-light">&nbsp;— {{ new Date(workout.performedAt).toLocaleString() }}</span>
+                          <span v-if="workout.photoUrl">
                             <br>
                             <figure class="image is-192x192 mt-2" style="margin:auto; width:192px; height:192px; overflow: hidden;">
-                              <img :src="workout.photo" alt="workout photo" style="border-radius:10px; width:192px; height:192px; object-fit: cover; display: block;" />
+                              <img :src="workout.photoUrl" alt="workout photo" style="border-radius:10px; width:192px; height:192px; object-fit: cover; display: block;" />
                             </figure>
                           </span>
                       </div>
@@ -51,18 +51,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { currentUser } from '../pages/user';
-import users from '../users/users.json';
-import workoutsData from '../utils/getWorkouts';
+import { listFriendActivities, listMyFriends, type Activity, type AppUser } from '../api/services';
 
-const friends = computed(() => {
-  if (!currentUser.value || !(currentUser.value as any).friends) return [];
-  return users.filter(u => (currentUser.value as any).friends.includes(u.id));
-});
+const friends = ref<AppUser[]>([]);
+const activitiesByFriend = ref<Record<number, Activity[]>>({});
+
+const orderedFriends = computed(() => friends.value);
+
+async function refresh() {
+  if (!currentUser.value) {
+    friends.value = [];
+    activitiesByFriend.value = {};
+    return;
+  }
+
+  const friendsResponse = await listMyFriends();
+  friends.value = friendsResponse.friends;
+
+  const map: Record<number, Activity[]> = {};
+  await Promise.all(
+    friends.value.map(async (friend) => {
+      const response = await listFriendActivities(friend.id);
+      map[friend.id] = response.activities;
+    })
+  );
+
+  activitiesByFriend.value = map;
+}
 
 function friendWorkouts(friendId: number) {
-  return workoutsData.filter(w => w.userId === friendId);
+  return activitiesByFriend.value[friendId] || [];
 }
+
+onMounted(() => {
+  void refresh();
+});
+
+watch(
+  () => currentUser.value?.id,
+  () => {
+    void refresh();
+  }
+);
 </script>
 

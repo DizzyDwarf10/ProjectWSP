@@ -46,19 +46,33 @@
                 <span class="icon"><i class="fas fa-user-plus"></i></span>
                 <span>Sign Up</span>
               </button>
-              <div class="dropdown is-right" :class="{ 'is-active': showDropdown }" @click="toggleDropdown" tabindex="0" @blur="closeDropdown">
+              <div class="dropdown is-right" :class="{ 'is-active': showDropdown }" tabindex="0" @blur="closeDropdown">
                 <div class="dropdown-trigger">
-                  <button class="button is-link">
+                  <button class="button is-link" @click="toggleDropdown">
                     <span class="icon"><i class="fas fa-sign-in-alt"></i></span>
                     <span>Login</span>
                   </button>
                 </div>
                 <div class="dropdown-menu">
                   <div class="dropdown-content">
-                    <a v-for="user in users" :key="user.id" class="dropdown-item is-flex is-align-items-center" @click.stop="selectUser(user)">
-                      <img :src="user.profilePicture" class="image is-32x32 mr-3 is-rounded" />
-                      <span class="is-size-5 has-text-weight-semibold">{{ user.name }}</span>
-                    </a>
+                    <div class="dropdown-item" style="min-width: 260px;">
+                      <div class="field">
+                        <label class="label is-small">Name</label>
+                        <div class="control">
+                          <input class="input" v-model="loginName" placeholder="username" />
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label class="label is-small">Password</label>
+                        <div class="control">
+                          <input class="input" type="password" v-model="loginPassword" placeholder="password" />
+                        </div>
+                      </div>
+                      <p v-if="loginError" class="has-text-danger is-size-7 mb-2">{{ loginError }}</p>
+                      <button class="button is-link is-fullwidth" :disabled="isLoggingIn" @click.stop="submitLogin">
+                        {{ isLoggingIn ? 'Logging in...' : 'Login' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -96,12 +110,17 @@
 <script setup lang="ts">
 import { RouterLink, useRouter } from "vue-router";
 import { ref, computed } from "vue";
-import users from "../users/users.json";
-import { currentUser, loginUser } from "../pages/user";
+import { ApiError } from "../api/http";
+import { currentUser, loginUser, logoutUser } from "../pages/user";
 
 const showDropdown = ref(false);
 const burgerActive = ref(false);
 const router = useRouter();
+const loginName = ref('');
+const loginPassword = ref('');
+const loginError = ref('');
+const isLoggingIn = ref(false);
+
 function goToSignUp() {
   router.push("/SignUp");
 }
@@ -111,13 +130,26 @@ function toggleDropdown() {
 function closeDropdown() {
   showDropdown.value = false;
 }
-function selectUser(user: any) {
-  loginUser(user);
-  showDropdown.value = false;
+
+async function submitLogin() {
+  loginError.value = '';
+  isLoggingIn.value = true;
+  try {
+    await loginUser(loginName.value, loginPassword.value);
+    showDropdown.value = false;
+    loginName.value = '';
+    loginPassword.value = '';
+  } catch (error) {
+    if (error instanceof ApiError) {
+      loginError.value = error.message;
+    } else {
+      loginError.value = 'Unable to login';
+    }
+  } finally {
+    isLoggingIn.value = false;
+  }
 }
-function logoutUser() {
-  loginUser(null);
-}
+
 const isAdmin = computed(() => (currentUser.value as any) && (currentUser.value as any).role === 'admin');
 </script>
 

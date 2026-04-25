@@ -10,11 +10,12 @@
               <div class="select is-fullwidth">
                 <select v-model="selectedType" required>
                   <option disabled value="">Select workout</option>
-                  <option v-for="type in workoutTypes" :key="type" :value="type">{{ type }}</option>
+                  <option v-for="type in workoutTypes" :key="type.id" :value="type.name">{{ type.name }}</option>
                 </select>
               </div>
             </div>
           </div>
+          <p v-if="errorMessage" class="has-text-danger mb-2">{{ errorMessage }}</p>
           <div class="field" v-if="showReps">
             <label class="label has-text-white">Reps</label>
             <div class="control">
@@ -78,7 +79,7 @@
                   <div class="control">
                     <div class="select is-fullwidth">
                       <select v-model="editForm.type" required>
-                        <option v-for="type in workoutTypes" :key="type" :value="type">{{ type }}</option>
+                        <option v-for="type in workoutTypes" :key="type.id" :value="type.name">{{ type.name }}</option>
                       </select>
                     </div>
                   </div>
@@ -126,25 +127,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { currentUser } from '../pages/user';
-import workoutsData from '../utils/getWorkouts';
+import {
+  createActivity,
+  deleteActivity,
+  listExerciseTypes,
+  listMyActivities,
+  updateActivity,
+  type Activity,
+  type ExerciseType
+} from '../api/services';
 
-const workoutTypes = [
-  'Push-ups',
-  'Squats',
-  'Plank',
-  'Running',
-  'Cycling',
-  'Jump Rope',
-  'Other'
-];
+const workoutTypes = ref<ExerciseType[]>([]);
 
 const selectedType = ref('');
 const reps = ref<number|null>(null);
 const time = ref<number|null>(null);
 const distance = ref<number|null>(null);
 const dateTime = ref('');
+const errorMessage = ref('');
 
 const showReps = computed(() => ['Push-ups', 'Squats', 'Jump Rope', 'Other'].includes(selectedType.value));
 const showTime = computed(() => ['Plank', 'Running', 'Cycling', 'Jump Rope'].includes(selectedType.value));
@@ -162,40 +164,99 @@ const workoutPhotos: Record<string, string> = {
   'Other': 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHdvcmtvdXR8ZW58MHx8MHx8fDA%3D'
 };
 
-const allWorkouts = ref<any[]>([]);
+type UiWorkout = {
+  id: number;
+  exerciseTypeId: number;
+  type: string;
+  reps?: number;
+  time?: number;
+  distance?: number;
+  dateTime: string;
+  photo?: string;
+};
+
+const allWorkouts = ref<UiWorkout[]>([]);
+
+function activityToUi(activity: Activity): UiWorkout {
+  return {
+    id: activity.id,
+    exerciseTypeId: activity.exerciseTypeId,
+    type: activity.exerciseTypeName,
+    reps: activity.reps || undefined,
+    time: activity.minutes || undefined,
+    distance: activity.distanceKm || undefined,
+    dateTime: activity.performedAt,
+    photo: activity.photoUrl || undefined
+  };
+}
+
+function typeNameToId(name: string): number | null {
+  const match = workoutTypes.value.find((item) => item.name === name);
+  return match ? match.id : null;
+}
+
+async function refreshWorkouts() {
+  if (!currentUser.value) {
+    allWorkouts.value = [];
+    return;
+  }
+
+  const [exerciseTypesResponse, activitiesResponse] = await Promise.all([
+    listExerciseTypes(),
+    listMyActivities()
+  ]);
+
+  workoutTypes.value = exerciseTypesResponse.exerciseTypes;
+  allWorkouts.value = activitiesResponse.activities.map(activityToUi);
+}
 
 onMounted(() => {
-  allWorkouts.value = workoutsData.map(w => ({ ...w }));
+  void refreshWorkouts();
 });
 
+watch(
+  () => currentUser.value?.id,
+  () => {
+    void refreshWorkouts();
+  }
+);
+
 const userWorkoutsSorted = computed(() => {
-  if (!userId.value) return [];
   return allWorkouts.value
-    .filter((w: any) => w.userId === userId.value)
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 });
 
 function addWorkout() {
-  if (!userId.value || !selectedType.value || !dateTime.value) return;
-  const entry: any = {
-    id: Date.now(),
-    type: selectedType.value,
-    dateTime: dateTime.value,
-    userId: userId.value,
-    photo: workoutPhotos[selectedType.value] || ''
-  };
-  if (showReps.value && reps.value) entry.reps = reps.value;
-  if (showTime.value && time.value) entry.time = time.value;
-  if (showDistance.value && distance.value) entry.distance = distance.value;
-  allWorkouts.value.unshift(entry);
-  reps.value = null;
-  time.value = null;
-  distance.value = null;
-  selectedType.value = '';
-  dateTime.value = '';
+  void (async () => {
+    if (!userId.value || !selectedType.value || !dateTime.value) return;
+
+    const exerciseTypeId = typeNameToId(selectedType.value);
+    if (!exerciseTypeId) {
+      errorMessage.value = 'Invalid workout type selected';
+      return;
+    }
+
+    errorMessage.value = '';
+
+    const response = await createActivity({
+      exerciseTypeId,
+      reps: showReps.value ? reps.value : null,
+      minutes: showTime.value ? time.value : null,
+      distanceKm: showDistance.value ? distance.value : null,
+      performedAt: dateTime.value,
+      photoUrl: workoutPhotos[selectedType.value] || null
+    });
+
+    allWorkouts.value.unshift(activityToUi(response.activity));
+    reps.value = null;
+    time.value = null;
+    distance.value = null;
+    selectedType.value = '';
+    dateTime.value = '';
+  })();
 }
 const editingIndex = ref<number|null>(null);
-const editForm = ref<any>({});
+const editForm = ref<UiWorkout | Record<string, never>>({});
 
 function startEdit(idx: number) {
   editingIndex.value = idx;
@@ -206,19 +267,40 @@ function cancelEdit() {
   editForm.value = {};
 }
 function saveEdit() {
-  if (editingIndex.value !== null) {
+  void (async () => {
+    if (editingIndex.value === null) return;
     const workout = userWorkoutsSorted.value[editingIndex.value];
-    const idx = allWorkouts.value.findIndex(w => w.id === workout.id);
-    if (idx !== -1) {
-      allWorkouts.value[idx] = { ...editForm.value };
+    const edited = editForm.value as UiWorkout;
+    const exerciseTypeId = typeNameToId(edited.type);
+    if (!exerciseTypeId) {
+      errorMessage.value = 'Invalid workout type selected';
+      return;
     }
+
+    const response = await updateActivity(workout.id, {
+      exerciseTypeId,
+      reps: edited.reps || null,
+      minutes: edited.time || null,
+      distanceKm: edited.distance || null,
+      performedAt: edited.dateTime,
+      photoUrl: workoutPhotos[edited.type] || null
+    });
+
+    const idx = allWorkouts.value.findIndex((item) => item.id === workout.id);
+    if (idx !== -1) {
+      allWorkouts.value[idx] = activityToUi(response.activity);
+    }
+
     cancelEdit();
-  }
+  })();
 }
 function deleteWorkout(workout: any) {
-  const idx = allWorkouts.value.findIndex(w => w.id === workout.id);
-  if (idx !== -1) {
-    allWorkouts.value.splice(idx, 1);
-  }
+  void (async () => {
+    await deleteActivity(workout.id);
+    const idx = allWorkouts.value.findIndex(w => w.id === workout.id);
+    if (idx !== -1) {
+      allWorkouts.value.splice(idx, 1);
+    }
+  })();
 }
 </script>
