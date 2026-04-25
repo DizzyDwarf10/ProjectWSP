@@ -1,29 +1,36 @@
 import { ref, type Ref } from 'vue';
+import { ApiError, setToken } from '../api/http';
+import { getMe, login, register, type AppUser } from '../api/services';
 
-export interface User {
-  id: string | number;
-  name: string;
-  profilePicture?: string;
-}
+export const currentUser: Ref<AppUser | null> = ref(null);
+export const authReady = ref(false);
 
-export interface Workout {
-  [key: string]: any;
-}
-
-export const currentUser: Ref<User | null> = ref(null);
-export const userWorkouts: Ref<Record<string | number, Workout[]>> = ref({});
-
-export function loginUser(user: User | null): void {
+export async function loginUser(name: string, password: string): Promise<void> {
+  const { token, user } = await login(name, password);
+  setToken(token);
   currentUser.value = user;
 }
 
-export function addWorkoutForCurrentUser(workout: Workout): void {
-  if (!currentUser.value) return;
-  const id = currentUser.value.id;
-  if (!userWorkouts.value[id]) userWorkouts.value[id] = [];
-  userWorkouts.value[id].push(workout);
+export async function registerUser(name: string, password: string, profilePicture?: string): Promise<void> {
+  const { token, user } = await register(name, password, profilePicture);
+  setToken(token);
+  currentUser.value = user;
 }
 
-export function getWorkoutsForUser(userId: string | number): Workout[] {
-  return userWorkouts.value[userId] || [];
+export async function loadSession(): Promise<void> {
+  try {
+    const { user } = await getMe();
+    currentUser.value = user;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      logoutUser();
+    }
+  } finally {
+    authReady.value = true;
+  }
+}
+
+export function logoutUser(): void {
+  setToken(null);
+  currentUser.value = null;
 }

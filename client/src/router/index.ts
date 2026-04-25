@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { authReady, currentUser } from '../pages/user';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -46,3 +47,24 @@ const router = createRouter({
 });
 
 export default router;
+
+const authRequiredRoutes = new Set(['friendsactivity', 'myactivity', 'peoplesearch']);
+
+router.beforeEach((to, _from, next) => {
+  if (!authReady.value) {
+    next();
+    return;
+  }
+
+  if (authRequiredRoutes.has(String(to.name)) && !currentUser.value) {
+    next('/SignUp');
+    return;
+  }
+
+  if (to.name === 'admin' && currentUser.value?.role !== 'admin') {
+    next('/HomePage');
+    return;
+  }
+
+  next();
+});
