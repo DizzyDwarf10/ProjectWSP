@@ -22,7 +22,19 @@ async function createUser({ name, passwordHash, role = 'user', profilePicture = 
 }
 
 async function findUserByName(name) {
-  return get('SELECT * FROM users WHERE name = ?', [name]);
+  const normalizedName = String(name || '').trim();
+  if (!normalizedName) {
+    return null;
+  }
+
+  return get(
+    `SELECT *
+     FROM users
+     WHERE LOWER(name) = LOWER(?)
+     ORDER BY CASE WHEN name = ? THEN 0 ELSE 1 END, id ASC
+     LIMIT 1`,
+    [normalizedName, normalizedName]
+  );
 }
 
 async function findUserById(id) {

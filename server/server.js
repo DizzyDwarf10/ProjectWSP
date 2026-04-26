@@ -6,7 +6,17 @@ const { initSchema } = require('./db/schema');
 
 const PORT = Number(process.env.PORT || 3000);
 
+function validateConfiguration() {
+  const requiredVariables = ['JWT_SECRET'];
+  const missing = requiredVariables.filter((name) => !process.env[name]);
+
+  if (missing.length) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
 async function start() {
+  validateConfiguration();
   await connectDb();
   await initSchema();
 

@@ -37,7 +37,9 @@ Required server env variables:
 - JWT_SECRET
 - JWT_EXPIRES_IN
 - DB_FILE
-- SEED_ADMIN_PASSWORD
+- SEED_JOE_PASSWORD
+- SEED_SAM_PASSWORD
+- SEED_LEBRON_PASSWORD
 
 Required client env variable:
 
@@ -65,6 +67,18 @@ Start client in a second terminal:
 - Users can only edit their own profile unless admin
 - Users can only access friend activities if friend relation exists (or admin)
 - Only admins can manage exercise types and delete users
+
+## Hosted Environment Notes
+
+- Configure server variables in your host dashboard instead of committing a real .env file.
+- Configure VITE_API_BASE_URL in the client host so the built app points at the deployed API.
+- Keep JWT_SECRET and the seed account passwords in the server host environment only.
+
+## Default Seed Logins
+
+- Joe / joe123
+- Sam / sam123
+- Lebron / lebron123
 
 ## Data Ownership
 

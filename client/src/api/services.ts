@@ -11,7 +11,7 @@ export interface AppUser {
 export interface ExerciseType {
   id: number;
   name: string;
-  metricMode: string;
+  metricMode: 'mixed' | 'reps' | 'minutes' | 'distance' | 'reps_minutes' | 'distance_minutes';
 }
 
 export interface Activity {
@@ -24,6 +24,24 @@ export interface Activity {
   distanceKm?: number;
   photoUrl?: string;
   performedAt: string;
+  userName?: string;
+  userProfilePicture?: string;
+}
+
+export interface ActivityInsights {
+  summary: {
+    totalActivities: number;
+    totalMinutes: number;
+    totalDistance: number;
+    totalReps: number;
+  };
+  breakdown: Array<{
+    type: string;
+    count: number;
+  }>;
+  favouriteExercise: string | null;
+  streak: number;
+  recentActivities: Activity[];
 }
 
 export async function login(name: string, password: string) {
@@ -93,6 +111,27 @@ export async function listExerciseTypes() {
   return request<{ exerciseTypes: ExerciseType[] }>('/exercise-types');
 }
 
+export async function createExerciseType(payload: { name: string; metricMode: ExerciseType['metricMode'] }) {
+  return request<{ exerciseType: ExerciseType }>('/exercise-types', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateExerciseType(
+  id: number,
+  payload: Partial<{ name: string; metricMode: ExerciseType['metricMode'] }>
+) {
+  return request<{ exerciseType: ExerciseType }>(`/exercise-types/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function deleteExerciseType(id: number) {
+  return request<void>(`/exercise-types/${id}`, { method: 'DELETE' });
+}
+
 export async function listMyActivities() {
   return request<{ activities: Activity[] }>('/activities/me');
 }
@@ -149,4 +188,8 @@ export async function getMySummary() {
       totalReps: number;
     };
   }>('/activities/me/summary');
+}
+
+export async function getMyInsights() {
+  return request<ActivityInsights>('/activities/me/insights');
 }

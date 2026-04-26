@@ -43,12 +43,17 @@ const router = createRouter({
       name: 'peoplesearch',
       component: () => import('../views/PeopleSearch.vue'),
     },
+    {
+      path: '/EditProfile',
+      name: 'editprofile',
+      component: () => import('../views/EditProfile.vue'),
+    },
   ],
 });
 
 export default router;
 
-const authRequiredRoutes = new Set(['friendsactivity', 'myactivity', 'peoplesearch']);
+const authRequiredRoutes = new Set(['friendsactivity', 'myactivity', 'peoplesearch', 'editprofile']);
 
 router.beforeEach((to, _from, next) => {
   if (!authReady.value) {

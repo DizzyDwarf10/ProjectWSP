@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const { run, get } = require('./index');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_PROFILE_PICTURE = 'https://images.unsplash.com/photo-1672344048213-76b6e77304bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGR1bWJlbGx8ZW58MHx8MHx8fDA%3D';
 
 const workoutPhotos = {
   'Push-ups': 'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cHVzaCUyMHVwfGVufDB8fDB8fHww',
@@ -78,51 +79,53 @@ async function createTables() {
 async function seedData() {
   const baseUsers = [
     {
-      name: 'Joseph',
+      name: 'Joe',
+      legacyNames: ['Joseph'],
       role: 'admin',
-      image: 'https://images.unsplash.com/photo-1590692994802-fc18443010a3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGdvcmlsbGF8ZW58MHx8MHx8fDA%3D'
+      image: 'https://images.unsplash.com/photo-1590692994802-fc18443010a3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGdvcmlsbGF8ZW58MHx8MHx8fDA%3D',
+      password: process.env.SEED_JOE_PASSWORD || process.env.SEED_ADMIN_PASSWORD || 'joe123'
     },
     {
       name: 'Sam',
       role: 'user',
-      image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHBlcnNvbnxlbnwwfHwwfHx8MA%3D%3D'
+      image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHBlcnNvbnxlbnwwfHwwfHx8MA%3D%3D',
+      password: process.env.SEED_SAM_PASSWORD || 'sam123'
     },
     {
       name: 'Lebron',
       role: 'user',
-      image: 'https://thfvnext.bing.com/th/id/OIP.aXbHZ-VxdlhLKKXmo_u30gHaFE?w=311&h=180&c=7&r=0&o=7&cb=thfvnext&dpr=1.3&pid=1.7&rm=3'
+      image: 'https://thfvnext.bing.com/th/id/OIP.aXbHZ-VxdlhLKKXmo_u30gHaFE?w=311&h=180&c=7&r=0&o=7&cb=thfvnext&dpr=1.3&pid=1.7&rm=3',
+      password: process.env.SEED_LEBRON_PASSWORD || 'lebron123'
     }
   ];
 
-  const existingAdmin = await get('SELECT id FROM users WHERE role = ?', ['admin']);
-  if (!existingAdmin) {
-    const adminPasswordHash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'admin123', 10);
-    await run(
-      'INSERT INTO users (name, password_hash, role, profile_picture) VALUES (?, ?, ?, ?)',
-      [baseUsers[0].name, adminPasswordHash, baseUsers[0].role, baseUsers[0].image]
-    );
-  }
+  for (const user of baseUsers) {
+    for (const legacyName of user.legacyNames || []) {
+      const current = await get('SELECT id FROM users WHERE name = ?', [user.name]);
+      const legacy = await get('SELECT id FROM users WHERE name = ?', [legacyName]);
 
-  const defaultUsers = baseUsers.slice(1);
+      if (!current && legacy) {
+        await run('UPDATE users SET name = ? WHERE id = ?', [user.name, legacy.id]);
+      }
+    }
 
-  for (const user of defaultUsers) {
+    const passwordHash = await bcrypt.hash(user.password, 10);
     const exists = await get('SELECT id FROM users WHERE name = ?', [user.name]);
     if (!exists) {
-      const passwordHash = await bcrypt.hash('password123', 10);
       await run(
         'INSERT INTO users (name, password_hash, role, profile_picture) VALUES (?, ?, ?, ?)',
         [user.name, passwordHash, user.role, user.image]
       );
+      continue;
     }
-  }
 
-  // Keep base profile images in sync with seed values for existing rows.
-  for (const user of baseUsers) {
-    await run('UPDATE users SET profile_picture = ? WHERE name = ?', [user.image, user.name]);
+    await run(
+      'UPDATE users SET password_hash = ?, role = ?, profile_picture = ? WHERE id = ?',
+      [passwordHash, user.role, user.image, exists.id]
+    );
   }
 
   // Backfill any users with null profile_picture to the default avatar.
-  const DEFAULT_PROFILE_PICTURE = 'https://images.unsplash.com/photo-1672344048213-76b6e77304bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGR1bWJlbGx8ZW58MHx8MHx8fDA%3D';
   await run('UPDATE users SET profile_picture = ? WHERE profile_picture IS NULL', [DEFAULT_PROFILE_PICTURE]);
 
   const defaultTypes = [
@@ -149,7 +152,7 @@ async function seedData() {
 }
 
 async function seedActivities() {
-  const baseUserNames = ['Joseph', 'Sam', 'Lebron'];
+  const baseUserNames = ['Joe', 'Sam', 'Lebron'];
 
   const typeIdByName = {};
   for (const template of workoutTemplates) {

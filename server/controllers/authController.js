@@ -3,7 +3,8 @@ const { createAccessToken } = require('../utils/jwt');
 const usersModel = require('../models/usersModel');
 
 async function register(req, res) {
-  const { name, password, profilePicture } = req.body;
+  const { password, profilePicture } = req.body;
+  const name = String(req.body.name || '').trim();
 
   if (!name || !password) {
     return res.status(400).json({ error: 'name and password are required' });
@@ -22,7 +23,8 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  const { name, password } = req.body;
+  const { password } = req.body;
+  const name = String(req.body.name || '').trim();
 
   if (!name || !password) {
     return res.status(400).json({ error: 'name and password are required' });

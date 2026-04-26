@@ -8,6 +8,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get('/me', asyncHandler(activitiesController.listMyActivities));
+router.get('/me/insights', asyncHandler(activitiesController.getMyInsights));
 router.get('/me/summary', asyncHandler(activitiesController.getMySummary));
 router.get('/friends/feed', asyncHandler(activitiesController.listMyFriendsFeed));
 router.get('/friends/:friendId', asyncHandler(activitiesController.listFriendActivities));

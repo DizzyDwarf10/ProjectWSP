@@ -1,5 +1,9 @@
 const { all, get, run } = require('../db');
 
+function toDateKey(date) {
+  return date.toISOString().slice(0, 10);
+}
+
 function mapRow(row) {
   if (!row) return null;
   return {
@@ -104,7 +108,7 @@ async function getActivityOwnership(id) {
 }
 
 async function getSummaryForUser(userId) {
-  return get(
+  const summary = await get(
     `SELECT
         COUNT(*) AS totalActivities,
         COALESCE(SUM(minutes), 0) AS totalMinutes,
@@ -114,6 +118,13 @@ async function getSummaryForUser(userId) {
      WHERE user_id = ?`,
     [userId]
   );
+
+  return {
+    totalActivities: Number(summary?.totalActivities || 0),
+    totalMinutes: Number(summary?.totalMinutes || 0),
+    totalDistance: Number(summary?.totalDistance || 0),
+    totalReps: Number(summary?.totalReps || 0)
+  };
 }
 
 async function listFriendsFeed(userId) {
@@ -136,6 +147,83 @@ async function listFriendsFeed(userId) {
   }));
 }
 
+async function listRecentActivitiesForUser(userId, limit = 8) {
+  const rows = await all(
+    `SELECT a.*, et.name AS exercise_type_name
+     FROM activities a
+     JOIN exercise_types et ON et.id = a.exercise_type_id
+     WHERE a.user_id = ?
+     ORDER BY a.performed_at DESC
+     LIMIT ?`,
+    [userId, limit]
+  );
+
+  return rows.map(mapRow);
+}
+
+async function listExerciseBreakdownForUser(userId) {
+  const rows = await all(
+    `SELECT et.name AS type, COUNT(*) AS count
+     FROM activities a
+     JOIN exercise_types et ON et.id = a.exercise_type_id
+     WHERE a.user_id = ?
+     GROUP BY et.name
+     ORDER BY count DESC, et.name ASC`,
+    [userId]
+  );
+
+  return rows.map((row) => ({
+    type: row.type,
+    count: Number(row.count)
+  }));
+}
+
+async function listActivityDateKeysForUser(userId) {
+  const rows = await all(
+    `SELECT DISTINCT DATE(performed_at) AS performed_day
+     FROM activities
+     WHERE user_id = ?
+     ORDER BY performed_day DESC`,
+    [userId]
+  );
+
+  return rows.map((row) => row.performed_day).filter(Boolean);
+}
+
+function calculateActiveStreak(dateKeys) {
+  if (!dateKeys.length) {
+    return 0;
+  }
+
+  const dateSet = new Set(dateKeys);
+  let streak = 0;
+  const cursor = new Date();
+
+  while (dateSet.has(toDateKey(cursor))) {
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
+  return streak;
+}
+
+async function getInsightsForUser(userId) {
+  const [summary, breakdown, recentActivities, dateKeys] = await Promise.all([
+    getSummaryForUser(userId),
+    listExerciseBreakdownForUser(userId),
+    listRecentActivitiesForUser(userId),
+    listActivityDateKeysForUser(userId)
+  ]);
+
+  return {
+    summary,
+    breakdown,
+    favouriteExercise: breakdown[0]?.type || null,
+    streak: calculateActiveStreak(dateKeys),
+    recentActivities
+  };
+}
+
 module.exports = {
   createActivity,
   findActivityById,
@@ -144,5 +232,8 @@ module.exports = {
   deleteActivity,
   getActivityOwnership,
   getSummaryForUser,
-  listFriendsFeed
+  listFriendsFeed,
+  listRecentActivitiesForUser,
+  listExerciseBreakdownForUser,
+  getInsightsForUser
 };
