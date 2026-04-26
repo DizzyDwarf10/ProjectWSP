@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getMyInsights, type ActivityInsights } from '../api/services';
 import { currentUser } from '../pages/user';
 
@@ -141,4 +141,16 @@ async function loadStats() {
 
 onMounted(loadStats);
 watch(() => currentUser.value?.id, loadStats);
+
+function onActivitiesChanged() {
+  void loadStats();
+}
+
+onMounted(() => {
+  window.addEventListener('activities:changed', onActivitiesChanged);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('activities:changed', onActivitiesChanged);
+});
 </script>

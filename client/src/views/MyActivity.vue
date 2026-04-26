@@ -257,6 +257,7 @@ function addWorkout() {
     });
 
     allWorkouts.value.unshift(activityToUi(response.activity));
+    window.dispatchEvent(new CustomEvent('activities:changed'));
     selectedTypeId.value = null;
     reps.value = null;
     minutes.value = null;
@@ -301,6 +302,8 @@ function saveEdit() {
       allWorkouts.value[index] = activityToUi(response.activity);
     }
 
+    window.dispatchEvent(new CustomEvent('activities:changed'));
+
     cancelEdit();
   })();
 }
@@ -309,6 +312,7 @@ function deleteWorkout(workout: UiWorkout) {
   void (async () => {
     await deleteActivity(workout.id);
     allWorkouts.value = allWorkouts.value.filter((item) => item.id !== workout.id);
+    window.dispatchEvent(new CustomEvent('activities:changed'));
   })();
 }
 
