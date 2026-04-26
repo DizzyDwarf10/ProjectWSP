@@ -22,7 +22,7 @@ function mapRow(row) {
 }
 
 async function createActivity(payload) {
-  const result = await run(
+  await run(
     `INSERT INTO activities
       (user_id, exercise_type_id, reps, minutes, distance_km, photo_url, performed_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -37,7 +37,16 @@ async function createActivity(payload) {
     ]
   );
 
-  return findActivityById(result.lastID);
+  const row = await get(
+    `SELECT id
+     FROM activities
+     WHERE user_id = ?
+     ORDER BY id DESC
+     LIMIT 1`,
+    [payload.userId]
+  );
+
+  return row ? findActivityById(row.id) : null;
 }
 
 async function findActivityById(id) {

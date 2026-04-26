@@ -8,7 +8,7 @@
         </h1>
         <p class="subtitle is-5 has-text-grey-light mb-4">
           <template v-if="isLoggedIn">All of your stats shown here.</template>
-          <template v-else>Track workouts, compare with friends, and manage your account from one full-stack app.</template>
+          <template v-else>Track workouts, compare with friends, and manage your fitness all from one app.</template>
         </p>
         <div class="columns is-multiline is-mobile">
           <div class="column is-6-mobile" v-for="item in summaryCards" :key="item.label">

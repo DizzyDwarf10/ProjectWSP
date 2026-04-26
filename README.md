@@ -4,7 +4,7 @@ This project is now fullstack:
 
 - Client: Vue 3 + TypeScript
 - Server: Node.js + Express
-- Database: SQLite
+- Database: SQLite (default local) or Supabase Postgres
 - Auth: JWT bearer tokens with server-side authorization rules
 
 ## Architecture
@@ -36,7 +36,9 @@ Required server env variables:
 - CLIENT_ORIGIN
 - JWT_SECRET
 - JWT_EXPIRES_IN
-- DB_FILE
+- DB_PROVIDER (`sqlite` or `supabase`)
+- DB_FILE (when `DB_PROVIDER=sqlite`)
+- SUPABASE_DB_URL (when `DB_PROVIDER=supabase`)
 - SEED_JOE_PASSWORD
 - SEED_SAM_PASSWORD
 - SEED_LEBRON_PASSWORD
@@ -73,6 +75,57 @@ Start client in a second terminal:
 - Configure server variables in your host dashboard instead of committing a real .env file.
 - Configure VITE_API_BASE_URL in the client host so the built app points at the deployed API.
 - Keep JWT_SECRET and the seed account passwords in the server host environment only.
+
+## Supabase Setup (Database)
+
+1. Create a new Supabase project.
+2. In Supabase dashboard, open Project Settings > Database and copy the Postgres connection string.
+3. In your server environment, set:
+	- `DB_PROVIDER=supabase`
+	- `SUPABASE_DB_URL=<your Supabase Postgres connection string>`
+	- `JWT_SECRET=<long random secret>`
+	- `CLIENT_ORIGIN=<your client URL>`
+	- `SEED_JOE_PASSWORD`, `SEED_SAM_PASSWORD`, `SEED_LEBRON_PASSWORD`
+4. Start the server once. On startup it runs `initSchema()` and creates/tops up the required tables and seed data in Supabase.
+5. Verify with `GET /api/health` and a login attempt (`Joe` + your configured seed password).
+
+Notes:
+- This app uses Supabase as managed Postgres only (not Supabase Auth).
+- If your connection string requires SSL, this server already connects with SSL enabled for Postgres.
+
+## Render Deployment
+
+Deploy the server first, then point the client to it.
+
+Server (Render Web Service):
+
+1. Push repository to GitHub.
+2. In Render, create a new Web Service from the repo.
+3. Configure:
+	- Build Command: `npm install`
+	- Start Command: `npm run dev:server`
+	- Root Directory: project root
+4. Add environment variables:
+	- `PORT=10000` (or leave unset and let Render inject)
+	- `DB_PROVIDER=supabase`
+	- `SUPABASE_DB_URL=<your Supabase Postgres URL>`
+	- `JWT_SECRET=<long random secret>`
+	- `JWT_EXPIRES_IN=2h`
+	- `CLIENT_ORIGIN=<your deployed client URL>`
+	- `SEED_JOE_PASSWORD`, `SEED_SAM_PASSWORD`, `SEED_LEBRON_PASSWORD`
+5. Deploy and test `https://<server>.onrender.com/api/health`.
+
+Client (Render Static Site):
+
+1. Create a new Static Site from the same repo.
+2. Configure:
+	- Root Directory: `client`
+	- Build Command: `npm install && npm run build`
+	- Publish Directory: `dist`
+3. Add env var:
+	- `VITE_API_BASE_URL=https://<server>.onrender.com/api`
+4. Deploy.
+5. Update server `CLIENT_ORIGIN` to your static site URL and redeploy server once.
 
 ## Default Seed Logins
 

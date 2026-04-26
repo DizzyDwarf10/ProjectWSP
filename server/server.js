@@ -8,6 +8,12 @@ const PORT = Number(process.env.PORT || 3000);
 
 function validateConfiguration() {
   const requiredVariables = ['JWT_SECRET'];
+  const provider = String(process.env.DB_PROVIDER || '').toLowerCase();
+
+  if (provider === 'supabase' || provider === 'postgres' || provider === 'postgresql') {
+    requiredVariables.push('SUPABASE_DB_URL');
+  }
+
   const missing = requiredVariables.filter((name) => !process.env[name]);
 
   if (missing.length) {

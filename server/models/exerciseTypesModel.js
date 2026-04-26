@@ -12,11 +12,12 @@ function mapRow(row) {
 }
 
 async function createExerciseType({ name, metricMode = 'mixed', createdBy = null }) {
-  const result = await run(
+  await run(
     'INSERT INTO exercise_types (name, metric_mode, created_by) VALUES (?, ?, ?)',
     [name, metricMode, createdBy]
   );
-  return findExerciseTypeById(result.lastID);
+  const row = await get('SELECT * FROM exercise_types WHERE name = ?', [name]);
+  return mapRow(row);
 }
 
 async function findExerciseTypeById(id) {
