@@ -33,6 +33,10 @@
           <span class="icon"><i class="fas fa-search"></i></span>
           <span>People Search</span>
         </RouterLink>
+        <RouterLink v-if="currentUser" class="navbar-item has-text-white" to="/EditProfile">
+          <span class="icon"><i class="fas fa-user-edit"></i></span>
+          <span>Edit Profile</span>
+        </RouterLink>
         <RouterLink v-if="isAdmin" class="navbar-item has-text-warning" to="/Admin">
           <span class="icon"><i class="fas fa-user-shield"></i></span>
           <span>Admin</span>

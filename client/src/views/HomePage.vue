@@ -1,26 +1,23 @@
 <template>
   <section class="section has-background-black-ter" style="min-height: 100vh;">
     <div class="container">
-      <div class="box has-background-dark has-text-centered" style="max-width: 700px; margin: 2rem auto;">
+      <div class="box has-background-dark" style="max-width: 980px; margin: 2rem auto;">
         <h1 class="title is-2 has-text-white">
           <template v-if="isLoggedIn">Hello, {{ userName }}!</template>
-          <template v-else>Hello</template>
+          <template v-else>Exercise Hub</template>
         </h1>
-        <p class="subtitle is-5 has-text-grey-light mb-5">Here's a summary of your activity.</p>
-        <div class="box has-background-black-ter p-5">
-          <div class="has-text-left mb-4">
-            <span class="title is-4 has-text-white">Recent Activity</span>
-          </div>
-          <div class="columns is-variable is-2 is-mobile">
-            <div class="column" v-for="(item, idx) in summary" :key="idx">
-              <div class="box has-background-link-light has-text-centered p-4">
-                <div class="is-size-2 has-text-weight-bold has-text-link">{{ item.count }}</div>
-                <div class="is-size-6 has-text-link mb-1">{{ item.label }}</div>
-                <div class="is-size-6 has-text-link-light">{{ item.details }}</div>
-              </div>
+        <p class="subtitle is-5 has-text-grey-light mb-4">
+          <template v-if="isLoggedIn">All of your stats shown here.</template>
+          <template v-else>Track workouts, compare with friends, and manage your account from one full-stack app.</template>
+        </p>
+        <div class="columns is-multiline is-mobile">
+          <div class="column is-6-mobile" v-for="item in summaryCards" :key="item.label">
+            <div class="box has-background-black-ter p-4">
+              <div class="is-size-7 has-text-grey-light">{{ item.label }}</div>
+              <div class="title is-4 has-text-white mt-2 mb-1">{{ item.value }}</div>
+              <div class="is-size-7 has-text-link-light">{{ item.details }}</div>
             </div>
           </div>
-          <div class="has-text-grey-light is-size-7 mt-4">Based on posts you've created.</div>
         </div>
       </div>
     </div>
@@ -29,76 +26,63 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { getMyInsights, type ActivityInsights } from '../api/services';
 import { currentUser } from '../pages/user';
-import { getMySummary } from '../api/services';
+
+const emptyInsights: ActivityInsights = {
+  summary: {
+    totalActivities: 0,
+    totalMinutes: 0,
+    totalDistance: 0,
+    totalReps: 0
+  },
+  breakdown: [],
+  favouriteExercise: null,
+  streak: 0,
+  recentActivities: []
+};
 
 const isLoggedIn = computed(() => !!currentUser.value);
-const user = computed(() => currentUser.value);
-const userName = computed(() => user.value?.name || 'User');
-const summaryData = ref({
-  totalActivities: 0,
-  totalMinutes: 0,
-  totalDistance: 0,
-  totalReps: 0
-});
+const userName = computed(() => currentUser.value?.name || 'User');
+const insights = ref<ActivityInsights>(emptyInsights);
 
-async function refreshSummary() {
-  if (!isLoggedIn.value) {
-    summaryData.value = {
-      totalActivities: 0,
-      totalMinutes: 0,
-      totalDistance: 0,
-      totalReps: 0
-    };
+async function refreshHome() {
+  if (!currentUser.value) {
+    insights.value = emptyInsights;
     return;
   }
-
-  const response = await getMySummary();
-  summaryData.value = response.summary;
+  insights.value = await getMyInsights();
 }
 
-function getSummary() {
-  if (!isLoggedIn.value) {
-    return [
-      { label: 'Today', count: 0, details: '' },
-      { label: 'This Week', count: 0, details: '' },
-      { label: 'This Month', count: 0, details: '' },
-      { label: 'This Year', count: 0, details: '' },
-    ];
+const summaryCards = computed(() => [
+  {
+    label: 'Total Activities',
+    value: insights.value.summary.totalActivities,
+    details: `${insights.value.summary.totalReps} total reps`
+  },
+  {
+    label: 'Current Streak',
+    value: `${insights.value.streak} day${insights.value.streak === 1 ? '' : 's'}`,
+    details: 'consecutive active days'
+  },
+  {
+    label: 'Total Distance',
+    value: `${insights.value.summary.totalDistance.toFixed(2)} km`,
+    details: 'logged by your account'
+  },
+  {
+    label: 'Favourite Exercise',
+    value: insights.value.favouriteExercise || 'None yet',
+    details: insights.value.recentActivities[0]?.exerciseTypeName || 'log an activity to start'
   }
-
-  return [
-    {
-      label: 'Total Activities',
-      count: summaryData.value.totalActivities,
-      details: `${summaryData.value.totalReps} reps`
-    },
-    {
-      label: 'Total Minutes',
-      count: summaryData.value.totalMinutes,
-      details: `${summaryData.value.totalDistance.toFixed(2)} km`
-    },
-    {
-      label: 'Total Distance',
-      count: Number(summaryData.value.totalDistance.toFixed(2)),
-      details: 'all time'
-    },
-    {
-      label: 'Total Reps',
-      count: summaryData.value.totalReps,
-      details: 'all time'
-    },
-  ];
-}
+]);
 
 watch(
   () => currentUser.value?.id,
   () => {
-    void refreshSummary();
+    void refreshHome();
   },
   { immediate: true }
 );
-
-const summary = computed(() => getSummary());
 </script>
 

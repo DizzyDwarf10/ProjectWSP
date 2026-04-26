@@ -8,9 +8,9 @@
             <label class="label has-text-white">Workout Type</label>
             <div class="control">
               <div class="select is-fullwidth">
-                <select v-model="selectedType" required>
-                  <option disabled value="">Select workout</option>
-                  <option v-for="type in workoutTypes" :key="type.id" :value="type.name">{{ type.name }}</option>
+                <select v-model.number="selectedTypeId" required>
+                  <option :value="null" disabled>Select workout</option>
+                  <option v-for="type in workoutTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
                 </select>
               </div>
             </div>
@@ -25,13 +25,13 @@
           <div class="field" v-if="showTime">
             <label class="label has-text-white">Time (minutes)</label>
             <div class="control">
-              <input class="input" type="number" v-model.number="time" min="1" step="1" />
+              <input class="input" type="number" v-model.number="minutes" min="1" step="1" />
             </div>
           </div>
           <div class="field" v-if="showDistance">
             <label class="label has-text-white">Distance (km)</label>
             <div class="control">
-              <input class="input" type="number" v-model.number="distance" min="0.01" step="0.01" />
+              <input class="input" type="number" v-model.number="distanceKm" min="0.01" step="0.01" />
             </div>
           </div>
           <div class="field">
@@ -46,29 +46,31 @@
             </div>
           </div>
         </form>
+
         <h2 class="title is-4 has-text-white has-text-centered mt-5">My Workouts</h2>
         <ul>
-          <li v-for="(workout, idx) in userWorkoutsSorted" :key="workout.id || idx" class="mb-4">
+          <li v-for="workout in userWorkoutsSorted" :key="workout.id" class="mb-4">
             <div class="box has-background-link has-text-centered">
-              <strong class="has-text-white">{{ workout.type }}</strong>
+              <strong class="has-text-white">{{ workout.exerciseTypeName }}</strong>
               <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
-              <span v-if="workout.time" class="has-text-grey-light">&nbsp;— Time: {{ workout.time }} min</span>
-              <span v-if="workout.distance" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distance }} km</span>
-              <span v-if="workout.dateTime" class="has-text-grey-light">&nbsp;— {{ new Date(workout.dateTime).toLocaleString() }}</span>
-              <span v-if="workout.photo">
+              <span v-if="workout.minutes" class="has-text-grey-light">&nbsp;— Time: {{ workout.minutes }} min</span>
+              <span v-if="workout.distanceKm" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distanceKm }} km</span>
+              <span v-if="workout.performedAt" class="has-text-grey-light">&nbsp;— {{ new Date(workout.performedAt).toLocaleString() }}</span>
+              <span v-if="workout.photoUrl">
                 <br>
                 <figure class="image is-192x192 mt-2" style="margin:auto; width:192px; height:192px; overflow: hidden;">
-                  <img :src="workout.photo" alt="workout photo" style="border-radius:10px; width:192px; height:192px; object-fit: cover; display: block;" />
+                  <img :src="workout.photoUrl" alt="workout photo" style="border-radius:10px; width:192px; height:192px; object-fit: cover; display: block;" />
                 </figure>
               </span>
               <div class="buttons mt-3">
-                <button class="button is-small is-info mr-2" @click="startEdit(idx)">Edit</button>
+                <button class="button is-small is-info mr-2" @click="startEdit(workout)">Edit</button>
                 <button class="button is-small is-danger" @click="deleteWorkout(workout)">Delete</button>
               </div>
             </div>
           </li>
         </ul>
-        <div v-if="editingIndex !== null" class="modal is-active">
+
+        <div v-if="editingActivityId !== null" class="modal is-active">
           <div class="modal-background" @click="cancelEdit"></div>
           <div class="modal-content">
             <div class="box">
@@ -78,34 +80,34 @@
                   <label class="label">Workout Type</label>
                   <div class="control">
                     <div class="select is-fullwidth">
-                      <select v-model="editForm.type" required>
-                        <option v-for="type in workoutTypes" :key="type.id" :value="type.name">{{ type.name }}</option>
+                      <select v-model.number="editForm.exerciseTypeId" required>
+                        <option v-for="type in workoutTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
                       </select>
                     </div>
                   </div>
                 </div>
-                <div class="field">
+                <div class="field" v-if="showEditReps">
                   <label class="label">Reps</label>
                   <div class="control">
                     <input class="input" type="number" v-model.number="editForm.reps" min="1" />
                   </div>
                 </div>
-                <div class="field">
+                <div class="field" v-if="showEditTime">
                   <label class="label">Time (minutes)</label>
                   <div class="control">
-                    <input class="input" type="number" v-model.number="editForm.time" min="1" step="1" />
+                    <input class="input" type="number" v-model.number="editForm.minutes" min="1" step="1" />
                   </div>
                 </div>
-                <div class="field">
+                <div class="field" v-if="showEditDistance">
                   <label class="label">Distance (km)</label>
                   <div class="control">
-                    <input class="input" type="number" v-model.number="editForm.distance" min="0.01" step="0.01" />
+                    <input class="input" type="number" v-model.number="editForm.distanceKm" min="0.01" step="0.01" />
                   </div>
                 </div>
                 <div class="field">
                   <label class="label">Date & Time</label>
                   <div class="control">
-                    <input class="input" type="datetime-local" v-model="editForm.dateTime" required />
+                    <input class="input" type="datetime-local" v-model="editForm.performedAt" required />
                   </div>
                 </div>
                 <div class="field is-grouped mt-4">
@@ -127,8 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { currentUser } from '../pages/user';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
   createActivity,
   deleteActivity,
@@ -138,65 +139,78 @@ import {
   type Activity,
   type ExerciseType
 } from '../api/services';
-
-const workoutTypes = ref<ExerciseType[]>([]);
-
-const selectedType = ref('');
-const reps = ref<number|null>(null);
-const time = ref<number|null>(null);
-const distance = ref<number|null>(null);
-const dateTime = ref('');
-const errorMessage = ref('');
-
-const showReps = computed(() => ['Push-ups', 'Squats', 'Jump Rope', 'Other'].includes(selectedType.value));
-const showTime = computed(() => ['Plank', 'Running', 'Cycling', 'Jump Rope'].includes(selectedType.value));
-const showDistance = computed(() => ['Running', 'Cycling'].includes(selectedType.value));
-
-const userId = computed(() => currentUser.value && (currentUser.value as any).id);
-
-const workoutPhotos: Record<string, string> = {
-  'Push-ups': 'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cHVzaCUyMHVwfGVufDB8fDB8fHww',
-  'Squats': 'https://plus.unsplash.com/premium_photo-1661906824628-3ac1f6c4ce1c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8c3F1YXRzfGVufDB8fDB8fHww',
-  'Plank': 'https://plus.unsplash.com/premium_photo-1672352100050-65cb2ee4d818?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cGxhbmt8ZW58MHx8MHx8fDA%3D',
-  'Running': 'https://images.unsplash.com/photo-1486218119243-13883505764c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fHJ1bm5pbmd8ZW58MHx8MHx8fDA%3D',
-  'Cycling': 'https://plus.unsplash.com/premium_photo-1713184149461-69b0abeb3daa?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Y3ljbGluZ3xlbnwwfHwwfHx8MA%3D%3D',
-  'Jump Rope': 'https://plus.unsplash.com/premium_photo-1664299555455-3e0a5542d3ea?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8anVtcCUyMHJvcGV8ZW58MHx8MHx8fDA%3D',
-  'Other': 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHdvcmtvdXR8ZW58MHx8MHx8fDA%3D'
-};
+import { currentUser } from '../pages/user';
 
 type UiWorkout = {
   id: number;
   exerciseTypeId: number;
-  type: string;
-  reps?: number;
-  time?: number;
-  distance?: number;
-  dateTime: string;
-  photo?: string;
+  exerciseTypeName: string;
+  reps: number | null;
+  minutes: number | null;
+  distanceKm: number | null;
+  performedAt: string;
+  photoUrl?: string;
 };
 
+type EditForm = {
+  exerciseTypeId: number | null;
+  reps: number | null;
+  minutes: number | null;
+  distanceKm: number | null;
+  performedAt: string;
+};
+
+const workoutTypes = ref<ExerciseType[]>([]);
+const selectedTypeId = ref<number | null>(null);
+const reps = ref<number | null>(null);
+const minutes = ref<number | null>(null);
+const distanceKm = ref<number | null>(null);
+const dateTime = ref('');
+const errorMessage = ref('');
 const allWorkouts = ref<UiWorkout[]>([]);
+const editingActivityId = ref<number | null>(null);
+const editForm = ref<EditForm>(createEmptyEditForm());
+
+function createEmptyEditForm(): EditForm {
+  return {
+    exerciseTypeId: null,
+    reps: null,
+    minutes: null,
+    distanceKm: null,
+    performedAt: ''
+  };
+}
+
+function metricModeSupports(metricMode: ExerciseType['metricMode'] | undefined, metric: 'reps' | 'minutes' | 'distance') {
+  if (!metricMode || metricMode === 'mixed') {
+    return true;
+  }
+
+  const supportedModes = {
+    reps: new Set<ExerciseType['metricMode']>(['reps', 'reps_minutes']),
+    minutes: new Set<ExerciseType['metricMode']>(['minutes', 'reps_minutes', 'distance_minutes']),
+    distance: new Set<ExerciseType['metricMode']>(['distance', 'distance_minutes'])
+  };
+
+  return supportedModes[metric].has(metricMode);
+}
 
 function activityToUi(activity: Activity): UiWorkout {
   return {
     id: activity.id,
     exerciseTypeId: activity.exerciseTypeId,
-    type: activity.exerciseTypeName,
-    reps: activity.reps || undefined,
-    time: activity.minutes || undefined,
-    distance: activity.distanceKm || undefined,
-    dateTime: activity.performedAt,
-    photo: activity.photoUrl || undefined
+    exerciseTypeName: activity.exerciseTypeName,
+    reps: activity.reps ?? null,
+    minutes: activity.minutes ?? null,
+    distanceKm: activity.distanceKm ?? null,
+    performedAt: activity.performedAt,
+    photoUrl: activity.photoUrl || undefined
   };
-}
-
-function typeNameToId(name: string): number | null {
-  const match = workoutTypes.value.find((item) => item.name === name);
-  return match ? match.id : null;
 }
 
 async function refreshWorkouts() {
   if (!currentUser.value) {
+    workoutTypes.value = [];
     allWorkouts.value = [];
     return;
   }
@@ -210,6 +224,94 @@ async function refreshWorkouts() {
   allWorkouts.value = activitiesResponse.activities.map(activityToUi);
 }
 
+const selectedType = computed(() =>
+  workoutTypes.value.find((type) => type.id === selectedTypeId.value) || null
+);
+const editType = computed(() =>
+  workoutTypes.value.find((type) => type.id === editForm.value.exerciseTypeId) || null
+);
+
+const showReps = computed(() => metricModeSupports(selectedType.value?.metricMode, 'reps'));
+const showTime = computed(() => metricModeSupports(selectedType.value?.metricMode, 'minutes'));
+const showDistance = computed(() => metricModeSupports(selectedType.value?.metricMode, 'distance'));
+const showEditReps = computed(() => metricModeSupports(editType.value?.metricMode, 'reps'));
+const showEditTime = computed(() => metricModeSupports(editType.value?.metricMode, 'minutes'));
+const showEditDistance = computed(() => metricModeSupports(editType.value?.metricMode, 'distance'));
+const userWorkoutsSorted = computed(() =>
+  [...allWorkouts.value].sort((left, right) => new Date(right.performedAt).getTime() - new Date(left.performedAt).getTime())
+);
+
+function addWorkout() {
+  void (async () => {
+    if (!currentUser.value || !selectedTypeId.value || !dateTime.value) {
+      return;
+    }
+
+    errorMessage.value = '';
+    const response = await createActivity({
+      exerciseTypeId: selectedTypeId.value,
+      reps: showReps.value ? reps.value : null,
+      minutes: showTime.value ? minutes.value : null,
+      distanceKm: showDistance.value ? distanceKm.value : null,
+      performedAt: dateTime.value
+    });
+
+    allWorkouts.value.unshift(activityToUi(response.activity));
+    selectedTypeId.value = null;
+    reps.value = null;
+    minutes.value = null;
+    distanceKm.value = null;
+    dateTime.value = '';
+  })();
+}
+
+function startEdit(workout: UiWorkout) {
+  editingActivityId.value = workout.id;
+  editForm.value = {
+    exerciseTypeId: workout.exerciseTypeId,
+    reps: workout.reps,
+    minutes: workout.minutes,
+    distanceKm: workout.distanceKm,
+    performedAt: workout.performedAt.slice(0, 16)
+  };
+}
+
+function cancelEdit() {
+  editingActivityId.value = null;
+  editForm.value = createEmptyEditForm();
+}
+
+function saveEdit() {
+  void (async () => {
+    if (!editingActivityId.value || !editForm.value.exerciseTypeId) {
+      return;
+    }
+
+    errorMessage.value = '';
+    const response = await updateActivity(editingActivityId.value, {
+      exerciseTypeId: editForm.value.exerciseTypeId,
+      reps: showEditReps.value ? editForm.value.reps : null,
+      minutes: showEditTime.value ? editForm.value.minutes : null,
+      distanceKm: showEditDistance.value ? editForm.value.distanceKm : null,
+      performedAt: editForm.value.performedAt
+    });
+
+    const index = allWorkouts.value.findIndex((item) => item.id === editingActivityId.value);
+    if (index !== -1) {
+      allWorkouts.value[index] = activityToUi(response.activity);
+    }
+
+    cancelEdit();
+  })();
+}
+
+function deleteWorkout(workout: UiWorkout) {
+  void (async () => {
+    await deleteActivity(workout.id);
+    allWorkouts.value = allWorkouts.value.filter((item) => item.id !== workout.id);
+  })();
+}
+
 onMounted(() => {
   void refreshWorkouts();
 });
@@ -220,87 +322,4 @@ watch(
     void refreshWorkouts();
   }
 );
-
-const userWorkoutsSorted = computed(() => {
-  return allWorkouts.value
-    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
-});
-
-function addWorkout() {
-  void (async () => {
-    if (!userId.value || !selectedType.value || !dateTime.value) return;
-
-    const exerciseTypeId = typeNameToId(selectedType.value);
-    if (!exerciseTypeId) {
-      errorMessage.value = 'Invalid workout type selected';
-      return;
-    }
-
-    errorMessage.value = '';
-
-    const response = await createActivity({
-      exerciseTypeId,
-      reps: showReps.value ? reps.value : null,
-      minutes: showTime.value ? time.value : null,
-      distanceKm: showDistance.value ? distance.value : null,
-      performedAt: dateTime.value,
-      photoUrl: workoutPhotos[selectedType.value] || null
-    });
-
-    allWorkouts.value.unshift(activityToUi(response.activity));
-    reps.value = null;
-    time.value = null;
-    distance.value = null;
-    selectedType.value = '';
-    dateTime.value = '';
-  })();
-}
-const editingIndex = ref<number|null>(null);
-const editForm = ref<UiWorkout | Record<string, never>>({});
-
-function startEdit(idx: number) {
-  editingIndex.value = idx;
-  editForm.value = { ...userWorkoutsSorted.value[idx] };
-}
-function cancelEdit() {
-  editingIndex.value = null;
-  editForm.value = {};
-}
-function saveEdit() {
-  void (async () => {
-    if (editingIndex.value === null) return;
-    const workout = userWorkoutsSorted.value[editingIndex.value];
-    const edited = editForm.value as UiWorkout;
-    const exerciseTypeId = typeNameToId(edited.type);
-    if (!exerciseTypeId) {
-      errorMessage.value = 'Invalid workout type selected';
-      return;
-    }
-
-    const response = await updateActivity(workout.id, {
-      exerciseTypeId,
-      reps: edited.reps || null,
-      minutes: edited.time || null,
-      distanceKm: edited.distance || null,
-      performedAt: edited.dateTime,
-      photoUrl: workoutPhotos[edited.type] || null
-    });
-
-    const idx = allWorkouts.value.findIndex((item) => item.id === workout.id);
-    if (idx !== -1) {
-      allWorkouts.value[idx] = activityToUi(response.activity);
-    }
-
-    cancelEdit();
-  })();
-}
-function deleteWorkout(workout: any) {
-  void (async () => {
-    await deleteActivity(workout.id);
-    const idx = allWorkouts.value.findIndex(w => w.id === workout.id);
-    if (idx !== -1) {
-      allWorkouts.value.splice(idx, 1);
-    }
-  })();
-}
 </script>

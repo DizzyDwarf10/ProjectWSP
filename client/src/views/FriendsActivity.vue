@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { currentUser } from '../pages/user';
-import { listFriendActivities, listMyFriends, type Activity, type AppUser } from '../api/services';
+import { listFriendsFeed, listMyFriends, type Activity, type AppUser } from '../api/services';
 
 const friends = ref<AppUser[]>([]);
 const activitiesByFriend = ref<Record<number, Activity[]>>({});
@@ -71,12 +71,13 @@ async function refresh() {
   friends.value = friendsResponse.friends;
 
   const map: Record<number, Activity[]> = {};
-  await Promise.all(
-    friends.value.map(async (friend) => {
-      const response = await listFriendActivities(friend.id);
-      map[friend.id] = response.activities;
-    })
-  );
+  const feedResponse = await listFriendsFeed();
+  for (const activity of feedResponse.activities) {
+    if (!map[activity.userId]) {
+      map[activity.userId] = [];
+    }
+    map[activity.userId].push(activity);
+  }
 
   activitiesByFriend.value = map;
 }
