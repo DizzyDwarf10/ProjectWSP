@@ -13,7 +13,13 @@
         <div class="columns is-multiline is-mobile">
           <div class="column is-6-mobile" v-for="item in summaryCards" :key="item.label">
             <div class="box has-background-black-ter p-4">
-              <div class="is-size-7 has-text-grey-light">{{ item.label }}</div>
+              <div class="is-size-7 has-text-grey-light is-flex is-align-items-center" style="gap:0.4rem;">
+                {{ item.label }}
+                <template v-if="item.label === 'Total Distance'">
+                  <button type="button" class="button is-small" :class="distanceUnit === 'km' ? 'is-link' : 'is-light'" @click="setDistanceUnit('km')">km</button>
+                  <button type="button" class="button is-small" :class="distanceUnit === 'miles' ? 'is-link' : 'is-light'" @click="setDistanceUnit('miles')">miles</button>
+                </template>
+              </div>
               <div class="title is-4 has-text-white mt-2 mb-1">{{ item.value }}</div>
               <div class="is-size-7 has-text-link-light">{{ item.details }}</div>
             </div>
@@ -28,6 +34,7 @@
 import { computed, ref, watch } from 'vue';
 import { getMyInsights, type ActivityInsights } from '../api/services';
 import { currentUser } from '../pages/user';
+import { distanceUnit, setDistanceUnit, fromKm } from '../utils/distanceUnit';
 
 const emptyInsights: ActivityInsights = {
   summary: {
@@ -67,8 +74,8 @@ const summaryCards = computed(() => [
   },
   {
     label: 'Total Distance',
-    value: `${insights.value.summary.totalDistance.toFixed(2)} km`,
-    details: 'logged by your account'
+    value: `${fromKm(insights.value.summary.totalDistance).toFixed(2)} ${distanceUnit.value}`,
+    details: 'traveled across all workouts'
   },
   {
     label: 'Favourite Exercise',

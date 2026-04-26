@@ -29,9 +29,15 @@
             </div>
           </div>
           <div class="field" v-if="showDistance">
-            <label class="label has-text-white">Distance (km)</label>
+            <label class="label has-text-white">
+              Distance
+              <span class="ml-3">
+                <button type="button" class="button is-small" :class="distanceUnit === 'km' ? 'is-link' : 'is-light'" @click="setDistanceUnit('km')">km</button>
+                <button type="button" class="button is-small ml-1" :class="distanceUnit === 'miles' ? 'is-link' : 'is-light'" @click="setDistanceUnit('miles')">miles</button>
+              </span>
+            </label>
             <div class="control">
-              <input class="input" type="number" v-model.number="distanceKm" min="0.01" step="0.01" />
+              <input class="input" type="number" v-model.number="distanceInput" min="0.01" step="0.01" />
             </div>
           </div>
           <div class="field">
@@ -54,7 +60,7 @@
               <strong class="has-text-white">{{ workout.exerciseTypeName }}</strong>
               <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
               <span v-if="workout.minutes" class="has-text-grey-light">&nbsp;— Time: {{ workout.minutes }} min</span>
-              <span v-if="workout.distanceKm" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distanceKm }} km</span>
+              <span v-if="workout.distanceKm" class="has-text-grey-light">&nbsp;— Distance: {{ formatDistance(workout.distanceKm) }}</span>
               <span v-if="workout.performedAt" class="has-text-grey-light">&nbsp;— {{ new Date(workout.performedAt).toLocaleString() }}</span>
               <span v-if="workout.photoUrl">
                 <br>
@@ -99,9 +105,15 @@
                   </div>
                 </div>
                 <div class="field" v-if="showEditDistance">
-                  <label class="label">Distance (km)</label>
+                  <label class="label">
+                    Distance
+                    <span class="ml-3">
+                      <button type="button" class="button is-small" :class="distanceUnit === 'km' ? 'is-link' : 'is-light'" @click="setDistanceUnit('km')">km</button>
+                      <button type="button" class="button is-small ml-1" :class="distanceUnit === 'miles' ? 'is-link' : 'is-light'" @click="setDistanceUnit('miles')">miles</button>
+                    </span>
+                  </label>
                   <div class="control">
-                    <input class="input" type="number" v-model.number="editForm.distanceKm" min="0.01" step="0.01" />
+                    <input class="input" type="number" v-model.number="editDistanceInput" min="0.01" step="0.01" />
                   </div>
                 </div>
                 <div class="field">
@@ -130,6 +142,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { distanceUnit, setDistanceUnit, toKm, fromKm, formatDistance } from '../utils/distanceUnit';
 import {
   createActivity,
   deleteActivity,
@@ -165,6 +178,11 @@ const selectedTypeId = ref<number | null>(null);
 const reps = ref<number | null>(null);
 const minutes = ref<number | null>(null);
 const distanceKm = ref<number | null>(null);
+// distanceInput is in the user's chosen unit; distanceKm holds the km value for the API
+const distanceInput = computed({
+  get: () => distanceKm.value != null ? fromKm(distanceKm.value) : null,
+  set: (v: number | null) => { distanceKm.value = v != null ? toKm(v) : null; }
+});
 const dateTime = ref('');
 const errorMessage = ref('');
 const allWorkouts = ref<UiWorkout[]>([]);
@@ -265,6 +283,12 @@ function addWorkout() {
     dateTime.value = '';
   })();
 }
+
+// editDistanceInput is in the user's chosen unit; editForm.distanceKm holds the km value
+const editDistanceInput = computed({
+  get: () => editForm.value.distanceKm != null ? fromKm(editForm.value.distanceKm) : null,
+  set: (v: number | null) => { editForm.value.distanceKm = v != null ? toKm(v) : null; }
+});
 
 function startEdit(workout: UiWorkout) {
   editingActivityId.value = workout.id;

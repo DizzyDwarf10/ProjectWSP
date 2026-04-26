@@ -28,7 +28,7 @@
                           <strong class="has-text-white">{{ workout.exerciseTypeName }}</strong>
                           <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
                           <span v-if="workout.minutes" class="has-text-grey-light">&nbsp;— Time: {{ workout.minutes }} min</span>
-                          <span v-if="workout.distanceKm" class="has-text-grey-light">&nbsp;— Distance: {{ workout.distanceKm }} km</span>
+                          <span v-if="workout.distanceKm" class="has-text-grey-light">&nbsp;— Distance: {{ formatDistance(workout.distanceKm) }}</span>
                           <span v-if="workout.performedAt" class="has-text-grey-light">&nbsp;— {{ new Date(workout.performedAt).toLocaleString() }}</span>
                           <span v-if="workout.photoUrl">
                             <br>
@@ -54,6 +54,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { currentUser } from '../pages/user';
 import { listFriendsFeed, listMyFriends, type Activity, type AppUser } from '../api/services';
+import { formatDistance } from '../utils/distanceUnit';
 
 const friends = ref<AppUser[]>([]);
 const activitiesByFriend = ref<Record<number, Activity[]>>({});

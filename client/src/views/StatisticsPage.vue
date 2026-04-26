@@ -27,8 +27,14 @@
           </div>
           <div class="column is-3-desktop is-6-tablet">
             <div class="box has-background-dark has-text-centered">
-              <p class="heading has-text-grey-light">Total Distance (km)</p>
-              <p class="title has-text-white">{{ insights.summary.totalDistance.toFixed(1) }}</p>
+              <p class="heading has-text-grey-light">
+                Total Distance
+                <span class="ml-2">
+                  <button type="button" class="button is-small" :class="distanceUnit === 'km' ? 'is-link' : 'is-light'" @click="setDistanceUnit('km')">km</button>
+                  <button type="button" class="button is-small ml-1" :class="distanceUnit === 'miles' ? 'is-link' : 'is-light'" @click="setDistanceUnit('miles')">miles</button>
+                </span>
+              </p>
+              <p class="title has-text-white">{{ displayTotalDistance }}</p>
             </div>
           </div>
           <div class="column is-3-desktop is-6-tablet">
@@ -80,7 +86,7 @@
                 <th class="has-text-grey-light">Exercise</th>
                 <th class="has-text-grey-light">Reps</th>
                 <th class="has-text-grey-light">Minutes</th>
-                <th class="has-text-grey-light">Distance (km)</th>
+                <th class="has-text-grey-light">Distance ({{ distanceUnit }})</th>
                 <th class="has-text-grey-light">Date</th>
               </tr>
             </thead>
@@ -89,7 +95,7 @@
                 <td class="has-text-white">{{ activity.exerciseTypeName }}</td>
                 <td class="has-text-grey-light">{{ activity.reps ?? '—' }}</td>
                 <td class="has-text-grey-light">{{ activity.minutes ?? '—' }}</td>
-                <td class="has-text-grey-light">{{ activity.distanceKm ?? '—' }}</td>
+                <td class="has-text-grey-light">{{ activity.distanceKm != null ? fromKm(activity.distanceKm).toFixed(2) : '—' }}</td>
                 <td class="has-text-grey-light">{{ new Date(activity.performedAt).toLocaleDateString() }}</td>
               </tr>
             </tbody>
@@ -105,9 +111,10 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue';
 import { getMyInsights, type ActivityInsights } from '../api/services';
 import { currentUser } from '../pages/user';
+import { distanceUnit, setDistanceUnit, fromKm } from '../utils/distanceUnit';
 
 const loading = ref(true);
 const insights = ref<ActivityInsights>({
@@ -116,6 +123,11 @@ const insights = ref<ActivityInsights>({
   favouriteExercise: null,
   streak: 0,
   recentActivities: []
+});
+
+const displayTotalDistance = computed(() => {
+  const val = fromKm(insights.value.summary.totalDistance);
+  return `${val.toFixed(1)} ${distanceUnit.value}`;
 });
 
 async function loadStats() {
