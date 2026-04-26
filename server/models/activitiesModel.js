@@ -128,11 +128,16 @@ async function getSummaryForUser(userId) {
     [userId]
   );
 
+  const totalActivities = summary?.totalActivities ?? summary?.totalactivities;
+  const totalMinutes = summary?.totalMinutes ?? summary?.totalminutes;
+  const totalDistance = summary?.totalDistance ?? summary?.totaldistance;
+  const totalReps = summary?.totalReps ?? summary?.totalreps;
+
   return {
-    totalActivities: Number(summary?.totalActivities || 0),
-    totalMinutes: Number(summary?.totalMinutes || 0),
-    totalDistance: Number(summary?.totalDistance || 0),
-    totalReps: Number(summary?.totalReps || 0)
+    totalActivities: Number(totalActivities || 0),
+    totalMinutes: Number(totalMinutes || 0),
+    totalDistance: Number(totalDistance || 0),
+    totalReps: Number(totalReps || 0)
   };
 }
 
