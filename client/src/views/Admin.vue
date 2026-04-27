@@ -144,124 +144,80 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import {
-  createExerciseType,
-  createUser,
-  deleteExerciseType as deleteExerciseTypeApi,
-  deleteUser as deleteUserApi,
-  listExerciseTypes,
-  listUsers,
-  updateExerciseType,
-  updateUser,
-  type AppUser,
-  type ExerciseType
-} from '../api/services';
+import { useAdminStore } from '../stores/adminStore';
 import { currentUser } from '../pages/user';
+import type { ExerciseType } from '../api/services';
 
 interface User {
   id: number;
   name: string;
   role: string;
-  friends: number[];
   profilePicture: string;
 }
 
+const adminStore = useAdminStore();
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
-const usersList = ref<User[]>([]);
-const exerciseTypes = ref<ExerciseType[]>([]);
+
+// Expose store collections directly to the template
+const usersList = computed(() => adminStore.users.map((u) => ({ id: u.id, name: u.name, role: u.role, profilePicture: u.profilePicture || '' })));
+const exerciseTypes = computed(() => adminStore.exerciseTypes);
+
+// --- User form state ---
 const showAddUser = ref(false);
 const editingUser = ref<User | null>(null);
-const showAddExerciseType = ref(false);
-const editingExerciseType = ref<ExerciseType | null>(null);
-const userForm = ref<Omit<User, 'id'>>({ name: '', role: 'user', friends: [], profilePicture: '' });
+const userForm = ref<{ name: string; role: string; profilePicture: string }>({ name: '', role: 'user', profilePicture: '' });
 const newUserPassword = ref('password123');
-const exerciseTypeForm = ref<{ name: string; metricMode: ExerciseType['metricMode'] }>({
-  name: '',
-  metricMode: 'mixed'
-});
-
-function appUserToUser(user: AppUser): User {
-  return {
-    id: user.id,
-    name: user.name,
-    role: user.role,
-    friends: [],
-    profilePicture: user.profilePicture || ''
-  };
-}
-
-async function refreshAdmin() {
-  if (!isAdmin.value) {
-    usersList.value = [];
-    exerciseTypes.value = [];
-    return;
-  }
-
-  const [usersResponse, exerciseTypesResponse] = await Promise.all([listUsers(), listExerciseTypes()]);
-  usersList.value = usersResponse.users.map(appUserToUser);
-  exerciseTypes.value = exerciseTypesResponse.exerciseTypes;
-}
 
 function resetUserForm() {
   editingUser.value = null;
   showAddUser.value = false;
-  userForm.value = { name: '', role: 'user', friends: [], profilePicture: '' };
+  userForm.value = { name: '', role: 'user', profilePicture: '' };
   newUserPassword.value = 'password123';
-}
-
-function resetExerciseTypeForm() {
-  editingExerciseType.value = null;
-  showAddExerciseType.value = false;
-  exerciseTypeForm.value = { name: '', metricMode: 'mixed' };
 }
 
 function editUser(user: User) {
   editingUser.value = user;
-  userForm.value = {
-    name: user.name,
-    role: user.role,
-    friends: user.friends,
-    profilePicture: user.profilePicture
-  };
+  userForm.value = { name: user.name, role: user.role, profilePicture: user.profilePicture };
   showAddUser.value = false;
 }
 
 function saveUser() {
   void (async () => {
     if (editingUser.value) {
-      const response = await updateUser(editingUser.value.id, {
+      await adminStore.editUser(editingUser.value.id, {
         name: userForm.value.name,
         role: userForm.value.role as 'admin' | 'user',
         profilePicture: userForm.value.profilePicture
       });
-
-      const index = usersList.value.findIndex((user) => user.id === editingUser.value!.id);
-      if (index !== -1) {
-        usersList.value[index] = appUserToUser(response.user);
-      }
     } else {
-      const response = await createUser({
+      await adminStore.addUser({
         name: userForm.value.name,
         password: newUserPassword.value,
         role: userForm.value.role as 'admin' | 'user',
         profilePicture: userForm.value.profilePicture
       });
-      usersList.value.push(appUserToUser(response.user));
     }
-
     resetUserForm();
   })();
 }
 
 function removeUser(id: number) {
-  void (async () => {
-    await deleteUserApi(id);
-    usersList.value = usersList.value.filter((user) => user.id !== id);
-  })();
+  void adminStore.removeUser(id);
 }
 
 function cancelEdit() {
   resetUserForm();
+}
+
+// --- Exercise type form state ---
+const showAddExerciseType = ref(false);
+const editingExerciseType = ref<ExerciseType | null>(null);
+const exerciseTypeForm = ref<{ name: string; metricMode: ExerciseType['metricMode'] }>({ name: '', metricMode: 'mixed' });
+
+function resetExerciseTypeForm() {
+  editingExerciseType.value = null;
+  showAddExerciseType.value = false;
+  exerciseTypeForm.value = { name: '', metricMode: 'mixed' };
 }
 
 function editExerciseType(exerciseType: ExerciseType) {
@@ -273,26 +229,16 @@ function editExerciseType(exerciseType: ExerciseType) {
 function saveExerciseType() {
   void (async () => {
     if (editingExerciseType.value) {
-      const response = await updateExerciseType(editingExerciseType.value.id, exerciseTypeForm.value);
-      const index = exerciseTypes.value.findIndex((item) => item.id === editingExerciseType.value!.id);
-      if (index !== -1) {
-        exerciseTypes.value[index] = response.exerciseType;
-      }
+      await adminStore.editExerciseType(editingExerciseType.value.id, exerciseTypeForm.value);
     } else {
-      const response = await createExerciseType(exerciseTypeForm.value);
-      exerciseTypes.value.push(response.exerciseType);
-      exerciseTypes.value.sort((left, right) => left.name.localeCompare(right.name));
+      await adminStore.addExerciseType(exerciseTypeForm.value);
     }
-
     resetExerciseTypeForm();
   })();
 }
 
 function removeExerciseType(id: number) {
-  void (async () => {
-    await deleteExerciseTypeApi(id);
-    exerciseTypes.value = exerciseTypes.value.filter((item) => item.id !== id);
-  })();
+  void adminStore.removeExerciseType(id);
 }
 
 function cancelExerciseTypeEdit() {
@@ -300,13 +246,14 @@ function cancelExerciseTypeEdit() {
 }
 
 onMounted(() => {
-  void refreshAdmin();
+  if (isAdmin.value) void adminStore.refresh();
 });
 
 watch(
   () => currentUser.value?.id,
   () => {
-    void refreshAdmin();
+    if (isAdmin.value) void adminStore.refresh();
+    else { adminStore.users.length = 0; adminStore.exerciseTypes.length = 0; }
   }
 );
 </script>

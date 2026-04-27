@@ -51,51 +51,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { currentUser } from '../pages/user';
-import { listFriendsFeed, listMyFriends, type Activity, type AppUser } from '../api/services';
+import { useFriendsActivityStore } from '../stores/friendsActivityStore';
 import { formatDistance } from '../utils/distanceUnit';
 
-const friends = ref<AppUser[]>([]);
-const activitiesByFriend = ref<Record<number, Activity[]>>({});
+const store = useFriendsActivityStore();
 
-const orderedFriends = computed(() => friends.value);
-
-async function refresh() {
-  if (!currentUser.value) {
-    friends.value = [];
-    activitiesByFriend.value = {};
-    return;
-  }
-
-  const friendsResponse = await listMyFriends();
-  friends.value = friendsResponse.friends;
-
-  const map: Record<number, Activity[]> = {};
-  const feedResponse = await listFriendsFeed();
-  for (const activity of feedResponse.activities) {
-    if (!map[activity.userId]) {
-      map[activity.userId] = [];
-    }
-    map[activity.userId].push(activity);
-  }
-
-  activitiesByFriend.value = map;
-}
+const orderedFriends = computed(() => store.friends);
 
 function friendWorkouts(friendId: number) {
-  return activitiesByFriend.value[friendId] || [];
+  return store.workoutsForFriend(friendId);
 }
 
-onMounted(() => {
-  void refresh();
-});
-
-watch(
-  () => currentUser.value?.id,
-  () => {
-    void refresh();
-  }
-);
+onMounted(() => { void store.refresh(); });
+watch(() => currentUser.value?.id, () => { void store.refresh(); });
 </script>
 

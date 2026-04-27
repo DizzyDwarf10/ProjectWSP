@@ -143,27 +143,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { distanceUnit, setDistanceUnit, toKm, fromKm, formatDistance } from '../utils/distanceUnit';
-import {
-  createActivity,
-  deleteActivity,
-  listExerciseTypes,
-  listMyActivities,
-  updateActivity,
-  type Activity,
-  type ExerciseType
-} from '../api/services';
+import { type ExerciseType } from '../api/services';
 import { currentUser } from '../pages/user';
+import { useActivityStore } from '../stores/activityStore';
+import { type Activity } from '../api/services';
 
-type UiWorkout = {
-  id: number;
-  exerciseTypeId: number;
-  exerciseTypeName: string;
-  reps: number | null;
-  minutes: number | null;
-  distanceKm: number | null;
-  performedAt: string;
-  photoUrl?: string;
-};
+const activityStore = useActivityStore();
+const workoutTypes = computed(() => activityStore.exerciseTypes);
+const userWorkoutsSorted = computed(() => activityStore.sortedActivities);
 
 type EditForm = {
   exerciseTypeId: number | null;
@@ -173,97 +160,40 @@ type EditForm = {
   performedAt: string;
 };
 
-const workoutTypes = ref<ExerciseType[]>([]);
 const selectedTypeId = ref<number | null>(null);
 const reps = ref<number | null>(null);
 const minutes = ref<number | null>(null);
 const distanceKm = ref<number | null>(null);
+const dateTime = ref('');
+const errorMessage = ref('');
+const editingActivityId = ref<number | null>(null);
+const editForm = ref<EditForm>(createEmptyEditForm());
 
 function roundDistanceInput(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-// distanceInput is in the user's chosen unit; distanceKm holds the km value for the API
 const distanceInput = computed({
-  get: () => {
-    if (distanceKm.value == null) {
-      return null;
-    }
-    return roundDistanceInput(fromKm(distanceKm.value));
-  },
-  set: (v: number | null) => {
-    if (v == null) {
-      distanceKm.value = null;
-      return;
-    }
-    distanceKm.value = toKm(roundDistanceInput(v));
-  }
+  get: () => (distanceKm.value == null ? null : roundDistanceInput(fromKm(distanceKm.value))),
+  set: (v: number | null) => { distanceKm.value = v == null ? null : toKm(roundDistanceInput(v)); }
 });
-const dateTime = ref('');
-const errorMessage = ref('');
-const allWorkouts = ref<UiWorkout[]>([]);
-const editingActivityId = ref<number | null>(null);
-const editForm = ref<EditForm>(createEmptyEditForm());
 
 function createEmptyEditForm(): EditForm {
-  return {
-    exerciseTypeId: null,
-    reps: null,
-    minutes: null,
-    distanceKm: null,
-    performedAt: ''
-  };
+  return { exerciseTypeId: null, reps: null, minutes: null, distanceKm: null, performedAt: '' };
 }
 
 function metricModeSupports(metricMode: ExerciseType['metricMode'] | undefined, metric: 'reps' | 'minutes' | 'distance') {
-  if (!metricMode || metricMode === 'mixed') {
-    return true;
-  }
-
+  if (!metricMode || metricMode === 'mixed') return true;
   const supportedModes = {
     reps: new Set<ExerciseType['metricMode']>(['reps', 'reps_minutes']),
     minutes: new Set<ExerciseType['metricMode']>(['minutes', 'reps_minutes', 'distance_minutes']),
     distance: new Set<ExerciseType['metricMode']>(['distance', 'distance_minutes'])
   };
-
   return supportedModes[metric].has(metricMode);
 }
 
-function activityToUi(activity: Activity): UiWorkout {
-  return {
-    id: activity.id,
-    exerciseTypeId: activity.exerciseTypeId,
-    exerciseTypeName: activity.exerciseTypeName,
-    reps: activity.reps ?? null,
-    minutes: activity.minutes ?? null,
-    distanceKm: activity.distanceKm ?? null,
-    performedAt: activity.performedAt,
-    photoUrl: activity.photoUrl || undefined
-  };
-}
-
-async function refreshWorkouts() {
-  if (!currentUser.value) {
-    workoutTypes.value = [];
-    allWorkouts.value = [];
-    return;
-  }
-
-  const [exerciseTypesResponse, activitiesResponse] = await Promise.all([
-    listExerciseTypes(),
-    listMyActivities()
-  ]);
-
-  workoutTypes.value = exerciseTypesResponse.exerciseTypes;
-  allWorkouts.value = activitiesResponse.activities.map(activityToUi);
-}
-
-const selectedType = computed(() =>
-  workoutTypes.value.find((type) => type.id === selectedTypeId.value) || null
-);
-const editType = computed(() =>
-  workoutTypes.value.find((type) => type.id === editForm.value.exerciseTypeId) || null
-);
+const selectedType = computed(() => workoutTypes.value.find((t) => t.id === selectedTypeId.value) || null);
+const editType = computed(() => workoutTypes.value.find((t) => t.id === editForm.value.exerciseTypeId) || null);
 
 const showReps = computed(() => metricModeSupports(selectedType.value?.metricMode, 'reps'));
 const showTime = computed(() => metricModeSupports(selectedType.value?.metricMode, 'minutes'));
@@ -271,27 +201,23 @@ const showDistance = computed(() => metricModeSupports(selectedType.value?.metri
 const showEditReps = computed(() => metricModeSupports(editType.value?.metricMode, 'reps'));
 const showEditTime = computed(() => metricModeSupports(editType.value?.metricMode, 'minutes'));
 const showEditDistance = computed(() => metricModeSupports(editType.value?.metricMode, 'distance'));
-const userWorkoutsSorted = computed(() =>
-  [...allWorkouts.value].sort((left, right) => new Date(right.performedAt).getTime() - new Date(left.performedAt).getTime())
-);
+
+const editDistanceInput = computed({
+  get: () => (editForm.value.distanceKm == null ? null : roundDistanceInput(fromKm(editForm.value.distanceKm))),
+  set: (v: number | null) => { editForm.value.distanceKm = v == null ? null : toKm(roundDistanceInput(v)); }
+});
 
 function addWorkout() {
   void (async () => {
-    if (!currentUser.value || !selectedTypeId.value || !dateTime.value) {
-      return;
-    }
-
+    if (!currentUser.value || !selectedTypeId.value || !dateTime.value) return;
     errorMessage.value = '';
-    const response = await createActivity({
+    await activityStore.addActivity({
       exerciseTypeId: selectedTypeId.value,
       reps: showReps.value ? reps.value : null,
       minutes: showTime.value ? minutes.value : null,
       distanceKm: showDistance.value ? distanceKm.value : null,
       performedAt: dateTime.value
     });
-
-    allWorkouts.value.unshift(activityToUi(response.activity));
-    window.dispatchEvent(new CustomEvent('activities:changed'));
     selectedTypeId.value = null;
     reps.value = null;
     minutes.value = null;
@@ -300,30 +226,13 @@ function addWorkout() {
   })();
 }
 
-// editDistanceInput is in the user's chosen unit; editForm.distanceKm holds the km value
-const editDistanceInput = computed({
-  get: () => {
-    if (editForm.value.distanceKm == null) {
-      return null;
-    }
-    return roundDistanceInput(fromKm(editForm.value.distanceKm));
-  },
-  set: (v: number | null) => {
-    if (v == null) {
-      editForm.value.distanceKm = null;
-      return;
-    }
-    editForm.value.distanceKm = toKm(roundDistanceInput(v));
-  }
-});
-
-function startEdit(workout: UiWorkout) {
+function startEdit(workout: Activity) {
   editingActivityId.value = workout.id;
   editForm.value = {
     exerciseTypeId: workout.exerciseTypeId,
-    reps: workout.reps,
-    minutes: workout.minutes,
-    distanceKm: workout.distanceKm,
+    reps: workout.reps ?? null,
+    minutes: workout.minutes ?? null,
+    distanceKm: workout.distanceKm ?? null,
     performedAt: workout.performedAt.slice(0, 16)
   };
 }
@@ -335,46 +244,23 @@ function cancelEdit() {
 
 function saveEdit() {
   void (async () => {
-    if (!editingActivityId.value || !editForm.value.exerciseTypeId) {
-      return;
-    }
-
+    if (!editingActivityId.value || !editForm.value.exerciseTypeId) return;
     errorMessage.value = '';
-    const response = await updateActivity(editingActivityId.value, {
+    await activityStore.editActivity(editingActivityId.value, {
       exerciseTypeId: editForm.value.exerciseTypeId,
       reps: showEditReps.value ? editForm.value.reps : null,
       minutes: showEditTime.value ? editForm.value.minutes : null,
       distanceKm: showEditDistance.value ? editForm.value.distanceKm : null,
       performedAt: editForm.value.performedAt
     });
-
-    const index = allWorkouts.value.findIndex((item) => item.id === editingActivityId.value);
-    if (index !== -1) {
-      allWorkouts.value[index] = activityToUi(response.activity);
-    }
-
-    window.dispatchEvent(new CustomEvent('activities:changed'));
-
     cancelEdit();
   })();
 }
 
-function deleteWorkout(workout: UiWorkout) {
-  void (async () => {
-    await deleteActivity(workout.id);
-    allWorkouts.value = allWorkouts.value.filter((item) => item.id !== workout.id);
-    window.dispatchEvent(new CustomEvent('activities:changed'));
-  })();
+function deleteWorkout(workout: Activity) {
+  void activityStore.removeActivity(workout.id);
 }
 
-onMounted(() => {
-  void refreshWorkouts();
-});
-
-watch(
-  () => currentUser.value?.id,
-  () => {
-    void refreshWorkouts();
-  }
-);
+onMounted(() => { void activityStore.refresh(); });
+watch(() => currentUser.value?.id, () => { void activityStore.refresh(); });
 </script>

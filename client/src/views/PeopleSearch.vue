@@ -47,52 +47,29 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { currentUser } from '../pages/user';
-import { addMyFriend, listMyFriends, listUsers, removeMyFriend, type AppUser } from '../api/services';
+import { usePeopleStore } from '../stores/peopleStore';
 
+const store = usePeopleStore();
 const query = ref('');
-const users = ref<AppUser[]>([]);
-const friends = ref<AppUser[]>([]);
 const fallbackProfile = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=60';
 
-const friendIds = computed(() => new Set(friends.value.map((friend) => friend.id)));
+const friendIds = computed(() => store.friendIds);
 
 const filteredUsers = computed(() => {
   const text = query.value.trim().toLowerCase();
-  return users.value
+  return store.users
     .filter((user) => user.id !== currentUser.value?.id)
     .filter((user) => user.name.toLowerCase().includes(text));
 });
 
-async function refresh() {
-  if (!currentUser.value) {
-    users.value = [];
-    friends.value = [];
-    return;
-  }
-
-  const [usersResponse, friendsResponse] = await Promise.all([listUsers(), listMyFriends()]);
-  users.value = usersResponse.users;
-  friends.value = friendsResponse.friends;
-}
-
 async function addFriend(friendId: number) {
-  await addMyFriend(friendId);
-  await refresh();
+  await store.addFriend(friendId);
 }
 
 async function removeFriend(friendId: number) {
-  await removeMyFriend(friendId);
-  await refresh();
+  await store.removeFriend(friendId);
 }
 
-onMounted(() => {
-  void refresh();
-});
-
-watch(
-  () => currentUser.value?.id,
-  () => {
-    void refresh();
-  }
-);
+onMounted(() => { void store.refresh(); });
+watch(() => currentUser.value?.id, () => { void store.refresh(); });
 </script>

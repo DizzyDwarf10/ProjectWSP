@@ -27,10 +27,10 @@
               <input class="input" type="password" v-model="newPassword" minlength="6" placeholder="Enter new password" autofocus />
             </div>
           </div>
-          <p v-if="errorMessage" class="has-text-danger mb-3">{{ errorMessage }}</p>
-          <p v-if="successMessage" class="has-text-success mb-3">{{ successMessage }}</p>
-          <button class="button is-link is-fullwidth" type="submit" :disabled="isSaving">
-            {{ isSaving ? 'Saving...' : 'Save Profile' }}
+          <p v-if="profileStore.error" class="has-text-danger mb-3">{{ profileStore.error }}</p>
+          <p v-if="profileStore.success" class="has-text-success mb-3">{{ profileStore.success }}</p>
+          <button class="button is-link is-fullwidth" type="submit" :disabled="profileStore.isSaving">
+            {{ profileStore.isSaving ? 'Saving...' : 'Save Profile' }}
           </button>
         </form>
       </div>
@@ -40,18 +40,15 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { ApiError } from '../api/http';
-import { updateUser } from '../api/services';
+import { useProfileStore } from '../stores/profileStore';
 import { currentUser } from '../pages/user';
 
+const profileStore = useProfileStore();
 const isLoggedIn = computed(() => !!currentUser.value);
 
 const profilePicture = ref('');
 const newPassword = ref('');
 const showPasswordField = ref(false);
-const isSaving = ref(false);
-const errorMessage = ref('');
-const successMessage = ref('');
 
 const profilePicturePreview = computed(() =>
   profilePicture.value ||
@@ -61,38 +58,19 @@ const profilePicturePreview = computed(() =>
 
 watch(
   () => currentUser.value?.id,
-  () => {
-    profilePicture.value = currentUser.value?.profilePicture || '';
-  },
+  () => { profilePicture.value = currentUser.value?.profilePicture || ''; },
   { immediate: true }
 );
 
 async function saveProfile() {
-  if (!currentUser.value) return;
-
-  errorMessage.value = '';
-  successMessage.value = '';
-  isSaving.value = true;
-
-  try {
-    const response = await updateUser(currentUser.value.id, {
-      profilePicture: profilePicture.value || undefined,
-      password: newPassword.value || undefined
-    });
-
-    currentUser.value = response.user;
-    profilePicture.value = response.user.profilePicture || '';
+  await profileStore.saveProfile({
+    profilePicture: profilePicture.value || undefined,
+    password: newPassword.value || undefined
+  });
+  if (!profileStore.error) {
     newPassword.value = '';
     showPasswordField.value = false;
-    successMessage.value = 'Profile updated.';
-  } catch (error) {
-    if (error instanceof ApiError) {
-      errorMessage.value = error.message;
-    } else {
-      errorMessage.value = 'Unable to update profile.';
-    }
-  } finally {
-    isSaving.value = false;
+    profilePicture.value = currentUser.value?.profilePicture || '';
   }
 }
 </script>
