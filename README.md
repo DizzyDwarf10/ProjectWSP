@@ -1,4 +1,4 @@
-Exercise Hub
+# Exercise Hub
 
 A simple, user-friendly web application to track your daily workouts and monitor your fitness progress.
 
