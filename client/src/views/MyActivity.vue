@@ -178,10 +178,26 @@ const selectedTypeId = ref<number | null>(null);
 const reps = ref<number | null>(null);
 const minutes = ref<number | null>(null);
 const distanceKm = ref<number | null>(null);
+
+function roundDistanceInput(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 // distanceInput is in the user's chosen unit; distanceKm holds the km value for the API
 const distanceInput = computed({
-  get: () => distanceKm.value != null ? fromKm(distanceKm.value) : null,
-  set: (v: number | null) => { distanceKm.value = v != null ? toKm(v) : null; }
+  get: () => {
+    if (distanceKm.value == null) {
+      return null;
+    }
+    return roundDistanceInput(fromKm(distanceKm.value));
+  },
+  set: (v: number | null) => {
+    if (v == null) {
+      distanceKm.value = null;
+      return;
+    }
+    distanceKm.value = toKm(roundDistanceInput(v));
+  }
 });
 const dateTime = ref('');
 const errorMessage = ref('');
@@ -286,8 +302,19 @@ function addWorkout() {
 
 // editDistanceInput is in the user's chosen unit; editForm.distanceKm holds the km value
 const editDistanceInput = computed({
-  get: () => editForm.value.distanceKm != null ? fromKm(editForm.value.distanceKm) : null,
-  set: (v: number | null) => { editForm.value.distanceKm = v != null ? toKm(v) : null; }
+  get: () => {
+    if (editForm.value.distanceKm == null) {
+      return null;
+    }
+    return roundDistanceInput(fromKm(editForm.value.distanceKm));
+  },
+  set: (v: number | null) => {
+    if (v == null) {
+      editForm.value.distanceKm = null;
+      return;
+    }
+    editForm.value.distanceKm = toKm(roundDistanceInput(v));
+  }
 });
 
 function startEdit(workout: UiWorkout) {
