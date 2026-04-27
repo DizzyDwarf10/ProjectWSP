@@ -31,63 +31,43 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { getMyInsights, type ActivityInsights } from '../api/services';
+import { computed, watch } from 'vue';
 import { currentUser } from '../pages/user';
 import { distanceUnit, setDistanceUnit, fromKm } from '../utils/distanceUnit';
+import { useInsightsStore } from '../stores/insightsStore';
 
-const emptyInsights: ActivityInsights = {
-  summary: {
-    totalActivities: 0,
-    totalMinutes: 0,
-    totalDistance: 0,
-    totalReps: 0
-  },
-  breakdown: [],
-  favouriteExercise: null,
-  streak: 0,
-  recentActivities: []
-};
+const insightsStore = useInsightsStore();
 
 const isLoggedIn = computed(() => !!currentUser.value);
 const userName = computed(() => currentUser.value?.name || 'User');
-const insights = ref<ActivityInsights>(emptyInsights);
-
-async function refreshHome() {
-  if (!currentUser.value) {
-    insights.value = emptyInsights;
-    return;
-  }
-  insights.value = await getMyInsights();
-}
 
 const summaryCards = computed(() => [
   {
     label: 'Total Activities',
-    value: insights.value.summary.totalActivities,
-    details: `${insights.value.summary.totalReps} total reps`
+    value: insightsStore.insights.summary.totalActivities,
+    details: `${insightsStore.insights.summary.totalReps} total reps`
   },
   {
     label: 'Current Streak',
-    value: `${insights.value.streak} day${insights.value.streak === 1 ? '' : 's'}`,
+    value: `${insightsStore.insights.streak} day${insightsStore.insights.streak === 1 ? '' : 's'}`,
     details: 'consecutive active days'
   },
   {
     label: 'Total Distance',
-    value: `${fromKm(insights.value.summary.totalDistance).toFixed(2)} ${distanceUnit.value}`,
+    value: `${fromKm(insightsStore.insights.summary.totalDistance).toFixed(2)} ${distanceUnit.value}`,
     details: 'traveled across all workouts'
   },
   {
     label: 'Favourite Exercise',
-    value: insights.value.favouriteExercise || 'None yet',
-    details: insights.value.recentActivities[0]?.exerciseTypeName || 'log an activity to start'
+    value: insightsStore.insights.favouriteExercise || 'None yet',
+    details: insightsStore.insights.recentActivities[0]?.exerciseTypeName || 'log an activity to start'
   }
 ]);
 
 watch(
   () => currentUser.value?.id,
   () => {
-    void refreshHome();
+    void insightsStore.refresh(!!currentUser.value);
   },
   { immediate: true }
 );

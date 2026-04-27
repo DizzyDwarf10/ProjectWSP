@@ -111,51 +111,29 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue';
-import { getMyInsights, type ActivityInsights } from '../api/services';
+import { onBeforeUnmount, onMounted, computed, watch } from 'vue';
 import { currentUser } from '../pages/user';
 import { distanceUnit, setDistanceUnit, fromKm } from '../utils/distanceUnit';
+import { useInsightsStore } from '../stores/insightsStore';
 
-const loading = ref(true);
-const insights = ref<ActivityInsights>({
-  summary: { totalActivities: 0, totalMinutes: 0, totalDistance: 0, totalReps: 0 },
-  breakdown: [],
-  favouriteExercise: null,
-  streak: 0,
-  recentActivities: []
-});
+const insightsStore = useInsightsStore();
+const loading = insightsStore.loading;
+const insights = insightsStore.insights;
 
 const displayTotalDistance = computed(() => {
-  const val = fromKm(insights.value.summary.totalDistance);
+  const val = fromKm(insights.summary.totalDistance);
   return `${val.toFixed(1)} ${distanceUnit.value}`;
 });
 
-async function loadStats() {
-  if (!currentUser.value) {
-    insights.value = {
-      summary: { totalActivities: 0, totalMinutes: 0, totalDistance: 0, totalReps: 0 },
-      breakdown: [],
-      favouriteExercise: null,
-      streak: 0,
-      recentActivities: []
-    };
-    loading.value = false;
-    return;
-  }
-
-  loading.value = true;
-  try {
-    insights.value = await getMyInsights();
-  } finally {
-    loading.value = false;
-  }
+function loadStats() {
+  void insightsStore.refresh(!!currentUser.value);
 }
 
 onMounted(loadStats);
 watch(() => currentUser.value?.id, loadStats);
 
 function onActivitiesChanged() {
-  void loadStats();
+  loadStats();
 }
 
 onMounted(() => {
