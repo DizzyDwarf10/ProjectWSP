@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import {
   listFriendsFeed,
   listMyFriends,
@@ -16,6 +16,17 @@ export const useFriendsActivityStore = defineStore('friendsActivity', () => {
   const friends = ref<AppUser[]>([]);
   const activitiesByFriend = ref<Record<number, Activity[]>>({});
   const error = ref<string | null>(null);
+
+  // Flat feed sorted newest first, used by FriendsActivity view
+  const chronologicalFeed = computed<Activity[]>(() => {
+    const all: Activity[] = [];
+    for (const activities of Object.values(activitiesByFriend.value)) {
+      all.push(...activities);
+    }
+    return all.sort(
+      (a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()
+    );
+  });
 
   async function refresh() {
     if (!currentUser.value) {
@@ -74,5 +85,5 @@ export const useFriendsActivityStore = defineStore('friendsActivity', () => {
     }
   }
 
-  return { friends, activitiesByFriend, error, refresh, workoutsForFriend, like, postComment, removeComment };
+  return { friends, activitiesByFriend, chronologicalFeed, error, refresh, workoutsForFriend, like, postComment, removeComment };
 });

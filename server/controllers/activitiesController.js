@@ -15,6 +15,19 @@ const DEFAULT_ACTIVITY_PHOTOS = {
 
 async function listMyActivities(req, res) {
   const activities = await activitiesModel.listActivitiesForUser(req.user.id);
+  if (activities.length) {
+    const ids = activities.map(a => a.id);
+    const [likesMap, commentsMap] = await Promise.all([
+      socialModel.getLikesForActivities(ids),
+      socialModel.getCommentsForActivities(ids)
+    ]);
+    for (const activity of activities) {
+      const likedUserIds = likesMap[activity.id] || [];
+      activity.likeCount = likedUserIds.length;
+      activity.likedByMe = likedUserIds.includes(req.user.id);
+      activity.comments = commentsMap[activity.id] || [];
+    }
+  }
   return res.json({ activities });
 }
 

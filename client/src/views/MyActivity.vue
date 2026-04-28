@@ -68,6 +68,41 @@
                   <img :src="workout.photoUrl" alt="workout photo" style="border-radius:10px; width:192px; height:192px; object-fit: cover; display: block;" />
                 </figure>
               </span>
+
+              <!-- Like count and comments from friends -->
+              <div class="mt-3 is-flex is-justify-content-center is-align-items-center" style="gap: 1rem;">
+                <span class="tag is-dark">❤️ {{ workout.likeCount ?? 0 }}</span>
+                <button
+                  class="button is-small is-light"
+                  @click="toggleComments(workout.id)"
+                >
+                  💬 {{ workout.comments?.length ?? 0 }} Comment{{ (workout.comments?.length ?? 0) !== 1 ? 's' : '' }}
+                </button>
+              </div>
+
+              <!-- Comments Section -->
+              <div v-if="openComments.has(workout.id)" class="mt-3" style="text-align:left;">
+                <div
+                  v-for="comment in workout.comments"
+                  :key="comment.id"
+                  class="is-flex is-align-items-flex-start mb-2"
+                  style="gap: 0.5rem;"
+                >
+                  <figure class="image is-32x32" style="flex-shrink:0;">
+                    <img
+                      :src="comment.userProfilePicture || defaultAvatar"
+                      alt="avatar"
+                      style="border-radius:50%; width:32px; height:32px; object-fit:cover;"
+                    />
+                  </figure>
+                  <div class="has-background-black-bis px-3 py-2" style="border-radius:8px; flex:1;">
+                    <p class="has-text-white is-size-7 mb-1"><strong class="has-text-white">{{ comment.userName }}</strong></p>
+                    <p class="has-text-grey-light is-size-7">{{ comment.body }}</p>
+                  </div>
+                </div>
+                <p v-if="!workout.comments?.length" class="has-text-grey-light is-size-7">No comments yet.</p>
+              </div>
+
               <div class="buttons mt-3">
                 <button class="button is-small is-info mr-2" @click="startEdit(workout)">Edit</button>
                 <button class="button is-small is-danger" @click="deleteWorkout(workout)">Delete</button>
@@ -151,6 +186,17 @@ import { type Activity } from '../api/services';
 const activityStore = useActivityStore();
 const workoutTypes = computed(() => activityStore.exerciseTypes);
 const userWorkoutsSorted = computed(() => activityStore.sortedActivities);
+
+const openComments = ref<Set<number>>(new Set());
+const defaultAvatar = 'https://images.unsplash.com/photo-1672344048213-76b6e77304bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGR1bWJlbGx8ZW58MHx8MHx8fDA%3D';
+
+function toggleComments(activityId: number) {
+  if (openComments.value.has(activityId)) {
+    openComments.value.delete(activityId);
+  } else {
+    openComments.value.add(activityId);
+  }
+}
 
 type EditForm = {
   exerciseTypeId: number | null;
