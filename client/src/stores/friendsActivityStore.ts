@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listFriendsFeed, listMyFriends, type Activity, type AppUser } from '../api/services';
+import {
+  listFriendsFeed,
+  listMyFriends,
+  toggleLike,
+  addComment,
+  deleteComment,
+  type Activity,
+  type ActivityComment,
+  type AppUser
+} from '../api/services';
 import { currentUser } from '../pages/user';
 
 export const useFriendsActivityStore = defineStore('friendsActivity', () => {
@@ -30,5 +39,40 @@ export const useFriendsActivityStore = defineStore('friendsActivity', () => {
     return activitiesByFriend.value[friendId] || [];
   }
 
-  return { friends, activitiesByFriend, error, refresh, workoutsForFriend };
+  function findActivity(activityId: number): Activity | undefined {
+    for (const activities of Object.values(activitiesByFriend.value)) {
+      const found = activities.find(a => a.id === activityId);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  async function like(activityId: number) {
+    const result = await toggleLike(activityId);
+    const activity = findActivity(activityId);
+    if (activity) {
+      activity.likeCount = result.likeCount;
+      activity.likedByMe = result.liked;
+    }
+  }
+
+  async function postComment(activityId: number, body: string) {
+    const result = await addComment(activityId, body);
+    const activity = findActivity(activityId);
+    if (activity) {
+      if (!activity.comments) activity.comments = [];
+      activity.comments.push(result.comment);
+    }
+    return result.comment;
+  }
+
+  async function removeComment(activityId: number, commentId: number) {
+    await deleteComment(activityId, commentId);
+    const activity = findActivity(activityId);
+    if (activity?.comments) {
+      activity.comments = activity.comments.filter((c: ActivityComment) => c.id !== commentId);
+    }
+  }
+
+  return { friends, activitiesByFriend, error, refresh, workoutsForFriend, like, postComment, removeComment };
 });

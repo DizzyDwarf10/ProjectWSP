@@ -14,6 +14,16 @@ export interface ExerciseType {
   metricMode: 'mixed' | 'reps' | 'minutes' | 'distance' | 'reps_minutes' | 'distance_minutes';
 }
 
+export interface ActivityComment {
+  id: number;
+  activityId: number;
+  userId: number;
+  userName: string;
+  userProfilePicture?: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface Activity {
   id: number;
   userId: number;
@@ -26,6 +36,9 @@ export interface Activity {
   performedAt: string;
   userName?: string;
   userProfilePicture?: string;
+  likeCount?: number;
+  likedByMe?: boolean;
+  comments?: ActivityComment[];
 }
 
 export interface ActivityInsights {
@@ -177,6 +190,27 @@ export async function updateActivity(
 
 export async function deleteActivity(id: number) {
   return request<void>(`/activities/${id}`, { method: 'DELETE' });
+}
+
+export async function toggleLike(activityId: number) {
+  return request<{ liked: boolean; likeCount: number }>(`/activities/${activityId}/like`, {
+    method: 'POST'
+  });
+}
+
+export async function listComments(activityId: number) {
+  return request<{ comments: ActivityComment[] }>(`/activities/${activityId}/comments`);
+}
+
+export async function addComment(activityId: number, body: string) {
+  return request<{ comment: ActivityComment }>(`/activities/${activityId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ body })
+  });
+}
+
+export async function deleteComment(activityId: number, commentId: number) {
+  return request<void>(`/activities/${activityId}/comments/${commentId}`, { method: 'DELETE' });
 }
 
 export async function getMySummary() {

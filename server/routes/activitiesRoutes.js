@@ -1,5 +1,6 @@
 const express = require('express');
 const activitiesController = require('../controllers/activitiesController');
+const socialController = require('../controllers/socialController');
 const { requireAuth } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/http');
 
@@ -15,5 +16,13 @@ router.get('/friends/:friendId', asyncHandler(activitiesController.listFriendAct
 router.post('/me', asyncHandler(activitiesController.createActivity));
 router.patch('/:id', asyncHandler(activitiesController.updateActivity));
 router.delete('/:id', asyncHandler(activitiesController.deleteActivity));
+
+// Likes
+router.post('/:activityId/like', asyncHandler(socialController.toggleLike));
+
+// Comments
+router.get('/:activityId/comments', asyncHandler(socialController.listComments));
+router.post('/:activityId/comments', asyncHandler(socialController.addComment));
+router.delete('/:activityId/comments/:commentId', asyncHandler(socialController.deleteComment));
 
 module.exports = router;

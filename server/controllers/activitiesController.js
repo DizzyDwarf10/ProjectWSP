@@ -1,6 +1,7 @@
 const activitiesModel = require('../models/activitiesModel');
 const exerciseTypesModel = require('../models/exerciseTypesModel');
 const usersModel = require('../models/usersModel');
+const socialModel = require('../models/socialModel');
 
 const DEFAULT_ACTIVITY_PHOTOS = {
   'Push-ups': 'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cHVzaCUyMHVwfGVufDB8fDB8fHww',
@@ -113,6 +114,19 @@ async function getMyInsights(req, res) {
 
 async function listMyFriendsFeed(req, res) {
   const activities = await activitiesModel.listFriendsFeed(req.user.id);
+  if (activities.length) {
+    const ids = activities.map(a => a.id);
+    const [likesMap, commentsMap] = await Promise.all([
+      socialModel.getLikesForActivities(ids),
+      socialModel.getCommentsForActivities(ids)
+    ]);
+    for (const activity of activities) {
+      const likedUserIds = likesMap[activity.id] || [];
+      activity.likeCount = likedUserIds.length;
+      activity.likedByMe = likedUserIds.includes(req.user.id);
+      activity.comments = commentsMap[activity.id] || [];
+    }
+  }
   return res.json({ activities });
 }
 
