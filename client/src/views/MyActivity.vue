@@ -54,9 +54,13 @@
         </form>
 
         <h2 class="title is-4 has-text-white has-text-centered mt-5">My Workouts</h2>
+        <!-- Showing counter -->
+        <p v-if="activityStore.total > 0" class="has-text-grey-light has-text-centered mb-3 is-size-7">
+          Showing {{ activityStore.sortedActivities.length }} of {{ activityStore.total }}
+        </p>
         <div ref="scrollEl" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
         <ul>
-          <li v-for="workout in visibleWorkouts" :key="workout.id" class="mb-4">
+          <li v-for="workout in activityStore.sortedActivities" :key="workout.id" class="mb-4">
             <div class="box has-background-link has-text-centered">
               <strong class="has-text-white">{{ workout.exerciseTypeName }}</strong>
               <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
@@ -111,9 +115,16 @@
             </div>
           </li>
         </ul>
-        <div v-if="isLoading" class="has-text-centered py-3">
-          <span class="has-text-grey-light">Loading more...</span>
-        </div>
+        <!-- Skeleton cards while loading next page -->
+        <template v-if="activityStore.isLoadingMore">
+          <div v-for="n in 3" :key="'sk-' + n" class="mb-4">
+            <div class="box has-background-link" style="opacity:0.5;">
+              <div class="skeleton-line mb-2" style="width:50%; margin:auto;"></div>
+              <div class="skeleton-line" style="width:75%; margin:auto;"></div>
+            </div>
+          </div>
+        </template>
+        <p v-if="!activityStore.hasMore && activityStore.sortedActivities.length > 0" class="has-text-grey has-text-centered is-size-7 py-2">All workouts loaded!</p>
         </div>
 
         <div v-if="editingActivityId !== null" class="modal is-active">
@@ -191,20 +202,15 @@ import { type Activity } from '../api/services';
 
 const activityStore = useActivityStore();
 const workoutTypes = computed(() => activityStore.exerciseTypes);
-const userWorkoutsSorted = computed(() => activityStore.sortedActivities);
 
-const PAGE_SIZE = 10;
-const visibleCount = ref(PAGE_SIZE);
 const scrollEl = ref<HTMLElement | null>(null);
 
-const visibleWorkouts = computed(() => userWorkoutsSorted.value.slice(0, visibleCount.value));
-
-const { isLoading } = useInfiniteScroll(
+useInfiniteScroll(
   scrollEl,
-  () => { visibleCount.value += PAGE_SIZE; },
+  () => activityStore.loadMore(),
   {
-    distance: 40,
-    canLoadMore: () => visibleCount.value < userWorkoutsSorted.value.length,
+    distance: 80,
+    canLoadMore: () => activityStore.hasMore,
   }
 );
 
@@ -331,3 +337,17 @@ function deleteWorkout(workout: Activity) {
 onMounted(() => { void activityStore.refresh(); });
 watch(() => currentUser.value?.id, () => { void activityStore.refresh(); });
 </script>
+
+<style scoped>
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #3a3a3a 25%, #555 50%, #3a3a3a 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+}
+</style>

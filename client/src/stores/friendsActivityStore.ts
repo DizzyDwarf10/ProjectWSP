@@ -12,38 +12,56 @@ import {
 } from '../api/services';
 import { currentUser } from '../pages/user';
 
+const PAGE_SIZE = 10;
+
 export const useFriendsActivityStore = defineStore('friendsActivity', () => {
   const friends = ref<AppUser[]>([]);
-  const activitiesByFriend = ref<Record<number, Activity[]>>({});
+  const chronologicalFeed = ref<Activity[]>([]);
+  const total = ref(0);
+  const isLoadingMore = ref(false);
   const error = ref<string | null>(null);
 
-  // Flat feed sorted newest first, used by FriendsActivity view
-  const chronologicalFeed = computed<Activity[]>(() => {
-    const all: Activity[] = [];
-    for (const activities of Object.values(activitiesByFriend.value)) {
-      all.push(...activities);
+  // kept for backward compat (used by workoutsForFriend)
+  const activitiesByFriend = computed<Record<number, Activity[]>>(() => {
+    const map: Record<number, Activity[]> = {};
+    for (const a of chronologicalFeed.value) {
+      if (!map[a.userId]) map[a.userId] = [];
+      map[a.userId].push(a);
     }
-    return all.sort(
-      (a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()
-    );
+    return map;
   });
+
+  const hasMore = computed(() => chronologicalFeed.value.length < total.value);
 
   async function refresh() {
     if (!currentUser.value) {
       friends.value = [];
-      activitiesByFriend.value = {};
+      chronologicalFeed.value = [];
+      total.value = 0;
       return;
     }
     error.value = null;
-    const [friendsRes, feedRes] = await Promise.all([listMyFriends(), listFriendsFeed()]);
+    chronologicalFeed.value = [];
+    total.value = 0;
+    const [friendsRes, feedRes] = await Promise.all([
+      listMyFriends(),
+      listFriendsFeed(PAGE_SIZE, 0)
+    ]);
     friends.value = friendsRes.friends;
+    chronologicalFeed.value = feedRes.activities;
+    total.value = feedRes.total;
+  }
 
-    const map: Record<number, Activity[]> = {};
-    for (const activity of feedRes.activities) {
-      if (!map[activity.userId]) map[activity.userId] = [];
-      map[activity.userId].push(activity);
+  async function loadMore() {
+    if (!hasMore.value || isLoadingMore.value) return;
+    isLoadingMore.value = true;
+    try {
+      const res = await listFriendsFeed(PAGE_SIZE, chronologicalFeed.value.length);
+      chronologicalFeed.value.push(...res.activities);
+      total.value = res.total;
+    } finally {
+      isLoadingMore.value = false;
     }
-    activitiesByFriend.value = map;
   }
 
   function workoutsForFriend(friendId: number): Activity[] {
@@ -51,11 +69,7 @@ export const useFriendsActivityStore = defineStore('friendsActivity', () => {
   }
 
   function findActivity(activityId: number): Activity | undefined {
-    for (const activities of Object.values(activitiesByFriend.value)) {
-      const found = activities.find(a => a.id === activityId);
-      if (found) return found;
-    }
-    return undefined;
+    return chronologicalFeed.value.find(a => a.id === activityId);
   }
 
   async function like(activityId: number) {
@@ -85,5 +99,19 @@ export const useFriendsActivityStore = defineStore('friendsActivity', () => {
     }
   }
 
-  return { friends, activitiesByFriend, chronologicalFeed, error, refresh, workoutsForFriend, like, postComment, removeComment };
+  return {
+    friends,
+    activitiesByFriend,
+    chronologicalFeed,
+    total,
+    isLoadingMore,
+    hasMore,
+    error,
+    refresh,
+    loadMore,
+    workoutsForFriend,
+    like,
+    postComment,
+    removeComment
+  };
 });

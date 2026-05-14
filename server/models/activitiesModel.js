@@ -161,6 +161,53 @@ async function listFriendsFeed(userId) {
   }));
 }
 
+async function listActivitiesForUserPaginated(userId, limit, offset) {
+  const [rows, countRow] = await Promise.all([
+    all(
+      `SELECT a.*, et.name AS exercise_type_name
+       FROM activities a
+       JOIN exercise_types et ON et.id = a.exercise_type_id
+       WHERE a.user_id = ?
+       ORDER BY a.performed_at DESC
+       LIMIT ? OFFSET ?`,
+      [userId, limit, offset]
+    ),
+    get(`SELECT COUNT(*) AS count FROM activities WHERE user_id = ?`, [userId])
+  ]);
+  return { activities: rows.map(mapRow), total: Number(countRow?.count || 0) };
+}
+
+async function listFriendsFeedPaginated(userId, limit, offset) {
+  const [rows, countRow] = await Promise.all([
+    all(
+      `SELECT a.*, et.name AS exercise_type_name, u.name AS user_name, u.profile_picture
+       FROM user_friends f
+       JOIN activities a ON a.user_id = f.friend_id
+       JOIN exercise_types et ON et.id = a.exercise_type_id
+       JOIN users u ON u.id = a.user_id
+       WHERE f.user_id = ?
+       ORDER BY a.performed_at DESC
+       LIMIT ? OFFSET ?`,
+      [userId, limit, offset]
+    ),
+    get(
+      `SELECT COUNT(*) AS count
+       FROM user_friends f
+       JOIN activities a ON a.user_id = f.friend_id
+       WHERE f.user_id = ?`,
+      [userId]
+    )
+  ]);
+  return {
+    activities: rows.map((row) => ({
+      ...mapRow(row),
+      userName: row.user_name,
+      userProfilePicture: row.profile_picture
+    })),
+    total: Number(countRow?.count || 0)
+  };
+}
+
 async function listRecentActivitiesForUser(userId, limit = 8) {
   const rows = await all(
     `SELECT a.*, et.name AS exercise_type_name
@@ -242,11 +289,13 @@ module.exports = {
   createActivity,
   findActivityById,
   listActivitiesForUser,
+  listActivitiesForUserPaginated,
   updateActivity,
   deleteActivity,
   getActivityOwnership,
   getSummaryForUser,
   listFriendsFeed,
+  listFriendsFeedPaginated,
   listRecentActivitiesForUser,
   listExerciseBreakdownForUser,
   getInsightsForUser

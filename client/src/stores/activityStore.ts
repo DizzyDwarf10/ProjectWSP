@@ -11,22 +11,43 @@ import {
 } from '../api/services';
 import { toKm } from '../utils/distanceUnit';
 
+const PAGE_SIZE = 10;
+
 export const useActivityStore = defineStore('activity', () => {
   const activities = ref<Activity[]>([]);
   const exerciseTypes = ref<ExerciseType[]>([]);
+  const total = ref(0);
+  const isLoadingMore = ref(false);
   const error = ref<string | null>(null);
 
-  const sortedActivities = computed(() =>
-    [...activities.value].sort(
-      (a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()
-    )
-  );
+  const hasMore = computed(() => activities.value.length < total.value);
+
+  // Already sorted DESC from server; keep computed for compatibility
+  const sortedActivities = computed(() => activities.value);
 
   async function refresh() {
     error.value = null;
-    const [typesRes, activitiesRes] = await Promise.all([listExerciseTypes(), listMyActivities()]);
+    activities.value = [];
+    total.value = 0;
+    const [typesRes, activitiesRes] = await Promise.all([
+      listExerciseTypes(),
+      listMyActivities(PAGE_SIZE, 0)
+    ]);
     exerciseTypes.value = typesRes.exerciseTypes;
     activities.value = activitiesRes.activities;
+    total.value = activitiesRes.total;
+  }
+
+  async function loadMore() {
+    if (!hasMore.value || isLoadingMore.value) return;
+    isLoadingMore.value = true;
+    try {
+      const res = await listMyActivities(PAGE_SIZE, activities.value.length);
+      activities.value.push(...res.activities);
+      total.value = res.total;
+    } finally {
+      isLoadingMore.value = false;
+    }
   }
 
   async function addActivity(payload: {
@@ -39,6 +60,7 @@ export const useActivityStore = defineStore('activity', () => {
     error.value = null;
     const res = await createActivity(payload);
     activities.value.unshift(res.activity);
+    total.value += 1;
     window.dispatchEvent(new CustomEvent('activities:changed'));
   }
 
@@ -63,15 +85,20 @@ export const useActivityStore = defineStore('activity', () => {
     error.value = null;
     await deleteActivity(id);
     activities.value = activities.value.filter((a) => a.id !== id);
+    total.value = Math.max(0, total.value - 1);
     window.dispatchEvent(new CustomEvent('activities:changed'));
   }
 
   return {
     activities,
     exerciseTypes,
+    total,
+    isLoadingMore,
+    hasMore,
     error,
     sortedActivities,
     refresh,
+    loadMore,
     addActivity,
     editActivity,
     removeActivity

@@ -7,12 +7,16 @@
           <p class="has-text-grey-light">Please log in to see your friends activity.</p>
         </div>
         <div v-else>
-          <div v-if="store.chronologicalFeed.length === 0" class="has-text-centered">
+          <div v-if="store.chronologicalFeed.length === 0 && !store.isLoadingMore" class="has-text-centered">
             <p class="has-text-grey-light">No activity from friends yet.</p>
           </div>
           <div v-else>
+            <!-- Showing counter -->
+            <p class="has-text-grey-light has-text-centered mb-3 is-size-7">
+              Showing {{ store.chronologicalFeed.length }} of {{ store.total }}
+            </p>
             <div ref="scrollEl" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
-            <div v-for="workout in visibleFeed" :key="workout.id" class="mb-4">
+            <div v-for="workout in store.chronologicalFeed" :key="workout.id" class="mb-4">
               <div class="box has-background-link has-text-centered">
                 <!-- Friend header -->
                 <div class="is-flex is-align-items-center is-justify-content-center mb-3" style="gap: 0.75rem;">
@@ -101,9 +105,20 @@
                 </div>
               </div>
             </div>
-            <div v-if="isLoading" class="has-text-centered py-3">
-              <span class="has-text-grey-light">Loading more...</span>
-            </div>
+            <!-- Skeleton cards while loading next page -->
+            <template v-if="store.isLoadingMore">
+              <div v-for="n in 3" :key="'sk-' + n" class="mb-4">
+                <div class="box has-background-link" style="opacity:0.5;">
+                  <div class="is-flex is-align-items-center is-justify-content-center mb-3" style="gap:0.75rem;">
+                    <div class="skeleton-circle"></div>
+                    <div class="skeleton-line" style="width:100px;"></div>
+                  </div>
+                  <div class="skeleton-line mb-2" style="width:60%; margin:auto;"></div>
+                  <div class="skeleton-line" style="width:80%; margin:auto;"></div>
+                </div>
+              </div>
+            </template>
+            <p v-if="!store.hasMore && store.chronologicalFeed.length > 0" class="has-text-grey has-text-centered is-size-7 py-2">All caught up!</p>
             </div>
           </div>
         </div>
@@ -120,20 +135,17 @@ import { useFriendsActivityStore } from '../stores/friendsActivityStore';
 import { formatDistance } from '../utils/distanceUnit';
 import type { AppUser } from '../api/services';
 
+
 const store = useFriendsActivityStore();
 
-const PAGE_SIZE = 10;
-const visibleCount = ref(PAGE_SIZE);
 const scrollEl = ref<HTMLElement | null>(null);
 
-const visibleFeed = computed(() => store.chronologicalFeed.slice(0, visibleCount.value));
-
-const { isLoading } = useInfiniteScroll(
+useInfiniteScroll(
   scrollEl,
-  () => { visibleCount.value += PAGE_SIZE; },
+  () => store.loadMore(),
   {
-    distance: 40,
-    canLoadMore: () => visibleCount.value < store.chronologicalFeed.length,
+    distance: 80,
+    canLoadMore: () => store.hasMore,
   }
 );
 
@@ -177,6 +189,29 @@ async function handleDeleteComment(activityId: number, commentId: number) {
 }
 
 onMounted(() => { void store.refresh(); });
-watch(() => currentUser.value?.id, () => { visibleCount.value = PAGE_SIZE; void store.refresh(); });
+watch(() => currentUser.value?.id, () => { void store.refresh(); });
 </script>
+
+<style scoped>
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #3a3a3a 25%, #555 50%, #3a3a3a 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+}
+.skeleton-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #3a3a3a 25%, #555 50%, #3a3a3a 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+</style>
 

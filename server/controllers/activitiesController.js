@@ -14,7 +14,9 @@ const DEFAULT_ACTIVITY_PHOTOS = {
 };
 
 async function listMyActivities(req, res) {
-  const activities = await activitiesModel.listActivitiesForUser(req.user.id);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const { activities, total } = await activitiesModel.listActivitiesForUserPaginated(req.user.id, limit, offset);
   if (activities.length) {
     const ids = activities.map(a => a.id);
     const [likesMap, commentsMap] = await Promise.all([
@@ -28,7 +30,7 @@ async function listMyActivities(req, res) {
       activity.comments = commentsMap[activity.id] || [];
     }
   }
-  return res.json({ activities });
+  return res.json({ activities, total });
 }
 
 async function resolveExerciseType(exerciseTypeId) {
@@ -126,7 +128,9 @@ async function getMyInsights(req, res) {
 }
 
 async function listMyFriendsFeed(req, res) {
-  const activities = await activitiesModel.listFriendsFeed(req.user.id);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const { activities, total } = await activitiesModel.listFriendsFeedPaginated(req.user.id, limit, offset);
   if (activities.length) {
     const ids = activities.map(a => a.id);
     const [likesMap, commentsMap] = await Promise.all([
@@ -140,7 +144,7 @@ async function listMyFriendsFeed(req, res) {
       activity.comments = commentsMap[activity.id] || [];
     }
   }
-  return res.json({ activities });
+  return res.json({ activities, total });
 }
 
 async function listFriendActivities(req, res) {

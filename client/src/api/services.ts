@@ -145,16 +145,16 @@ export async function deleteExerciseType(id: number) {
   return request<void>(`/exercise-types/${id}`, { method: 'DELETE' });
 }
 
-export async function listMyActivities() {
-  return request<{ activities: Activity[] }>('/activities/me');
+export async function listMyActivities(limit = 10, offset = 0) {
+  return request<{ activities: Activity[]; total: number }>(`/activities/me?limit=${limit}&offset=${offset}`);
 }
 
 export async function listFriendActivities(friendId: number) {
   return request<{ activities: Activity[] }>(`/activities/friends/${friendId}`);
 }
 
-export async function listFriendsFeed() {
-  return request<{ activities: Activity[] }>('/activities/friends/feed');
+export async function listFriendsFeed(limit = 10, offset = 0) {
+  return request<{ activities: Activity[]; total: number }>(`/activities/friends/feed?limit=${limit}&offset=${offset}`);
 }
 
 export async function createActivity(payload: {
