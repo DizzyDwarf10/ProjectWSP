@@ -270,9 +270,9 @@ async function seedActivities() {
     const countRow = await get('SELECT COUNT(*) AS count FROM activities WHERE user_id = ?', [user.id]);
     const existingCount = countRow?.count || 0;
 
-    if (existingCount >= 5) continue;
+    if (existingCount >= 30) continue;
 
-    const needed = 5 - existingCount;
+    const needed = 30 - existingCount;
     const nameOffset = name.length;
 
     for (let i = 0; i < needed; i += 1) {
