@@ -76,7 +76,11 @@
 
               <!-- Like count and comments from friends -->
               <div class="mt-3 is-flex is-justify-content-center is-align-items-center" style="gap: 1rem;">
-                <button class="button is-small" :class="workout.likedByMe ? 'is-danger' : 'is-light'" disabled>
+                <button
+                  class="button is-small"
+                  :class="workout.likedByMe ? 'is-danger' : 'is-light'"
+                  @click="activityStore.like(workout.id)"
+                >
                   <span>{{ workout.likedByMe ? '❤️' : '🤍' }} {{ workout.likeCount ?? 0 }}</span>
                 </button>
                 <button

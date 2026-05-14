@@ -6,6 +6,7 @@ import {
   listExerciseTypes,
   listMyActivities,
   updateActivity,
+  toggleLike,
   type Activity,
   type ExerciseType
 } from '../api/services';
@@ -82,6 +83,15 @@ export const useActivityStore = defineStore('activity', () => {
     window.dispatchEvent(new CustomEvent('activities:changed'));
   }
 
+  async function like(activityId: number) {
+    const result = await toggleLike(activityId);
+    const activity = activities.value.find(a => a.id === activityId);
+    if (activity) {
+      activity.likeCount = result.likeCount;
+      activity.likedByMe = result.liked;
+    }
+  }
+
   async function removeActivity(id: number) {
     error.value = null;
     await deleteActivity(id);
@@ -102,6 +112,7 @@ export const useActivityStore = defineStore('activity', () => {
     loadMore,
     addActivity,
     editActivity,
+    like,
     removeActivity
   };
 });
