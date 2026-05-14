@@ -15,7 +15,7 @@
             <p class="has-text-grey-light has-text-centered mb-3 is-size-7">
               Showing {{ store.chronologicalFeed.length }} of {{ store.total }}
             </p>
-            <div ref="scrollEl" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+            <div v-infinite-scroll="[store.loadMore, { distance: 80, canLoadMore }]" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
             <div v-for="workout in store.chronologicalFeed" :key="workout.id" class="mb-4">
               <div class="box has-background-link has-text-centered">
                 <!-- Friend header -->
@@ -129,7 +129,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useInfiniteScroll } from '@vueuse/core';
+import { vInfiniteScroll } from '@vueuse/components';
 import { currentUser } from '../pages/user';
 import { useFriendsActivityStore } from '../stores/friendsActivityStore';
 import { formatDistance } from '../utils/distanceUnit';
@@ -138,16 +138,9 @@ import type { AppUser } from '../api/services';
 
 const store = useFriendsActivityStore();
 
-const scrollEl = ref<HTMLElement | null>(null);
-
-useInfiniteScroll(
-  scrollEl,
-  () => store.loadMore(),
-  {
-    distance: 80,
-    canLoadMore: () => store.hasMore,
-  }
-);
+function canLoadMore() {
+  return store.hasMore;
+}
 
 const openComments = ref<Set<number>>(new Set());
 const commentDrafts = reactive<Record<number, string>>({});

@@ -58,7 +58,7 @@
         <p v-if="activityStore.total > 0" class="has-text-grey-light has-text-centered mb-3 is-size-7">
           Showing {{ activityStore.sortedActivities.length }} of {{ activityStore.total }}
         </p>
-        <div ref="scrollEl" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+        <div v-infinite-scroll="[activityStore.loadMore, { distance: 80, canLoadMore }]" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
         <ul>
           <li v-for="workout in activityStore.sortedActivities" :key="workout.id" class="mb-4">
             <div class="box has-background-link has-text-centered">
@@ -193,7 +193,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useInfiniteScroll } from '@vueuse/core';
+import { vInfiniteScroll } from '@vueuse/components';
 import { distanceUnit, setDistanceUnit, toKm, fromKm, formatDistance } from '../utils/distanceUnit';
 import { type ExerciseType } from '../api/services';
 import { currentUser } from '../pages/user';
@@ -203,16 +203,9 @@ import { type Activity } from '../api/services';
 const activityStore = useActivityStore();
 const workoutTypes = computed(() => activityStore.exerciseTypes);
 
-const scrollEl = ref<HTMLElement | null>(null);
-
-useInfiniteScroll(
-  scrollEl,
-  () => activityStore.loadMore(),
-  {
-    distance: 80,
-    canLoadMore: () => activityStore.hasMore,
-  }
-);
+function canLoadMore() {
+  return activityStore.hasMore;
+}
 
 const openComments = ref<Set<number>>(new Set());
 const defaultAvatar = 'https://images.unsplash.com/photo-1672344048213-76b6e77304bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGR1bWJlbGx8ZW58MHx8MHx8fDA%3D';
