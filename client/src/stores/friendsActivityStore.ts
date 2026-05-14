@@ -56,6 +56,7 @@ export const useFriendsActivityStore = defineStore('friendsActivity', () => {
     if (!hasMore.value || isLoadingMore.value) return;
     isLoadingMore.value = true;
     try {
+      await new Promise(resolve => setTimeout(resolve, 800));
       const res = await listFriendsFeed(PAGE_SIZE, chronologicalFeed.value.length);
       chronologicalFeed.value.push(...res.activities);
       total.value = res.total;

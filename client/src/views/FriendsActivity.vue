@@ -117,6 +117,7 @@
                   <div class="skeleton-line" style="width:80%; margin:auto;"></div>
                 </div>
               </div>
+              <p class="has-text-grey-light has-text-centered is-size-6 py-2">Loading...</p>
             </template>
             <p v-if="!store.hasMore && store.chronologicalFeed.length > 0" class="has-text-grey has-text-centered is-size-7 py-2">All caught up!</p>
             </div>

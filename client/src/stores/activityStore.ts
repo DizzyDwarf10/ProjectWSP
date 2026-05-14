@@ -42,6 +42,7 @@ export const useActivityStore = defineStore('activity', () => {
     if (!hasMore.value || isLoadingMore.value) return;
     isLoadingMore.value = true;
     try {
+      await new Promise(resolve => setTimeout(resolve, 800));
       const res = await listMyActivities(PAGE_SIZE, activities.value.length);
       activities.value.push(...res.activities);
       total.value = res.total;
