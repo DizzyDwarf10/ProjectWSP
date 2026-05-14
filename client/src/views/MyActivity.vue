@@ -76,7 +76,9 @@
 
               <!-- Like count and comments from friends -->
               <div class="mt-3 is-flex is-justify-content-center is-align-items-center" style="gap: 1rem;">
-                <span class="tag is-dark">❤️ {{ workout.likeCount ?? 0 }}</span>
+                <button class="button is-small" :class="workout.likedByMe ? 'is-danger' : 'is-light'" disabled>
+                  <span>{{ workout.likedByMe ? '❤️' : '🤍' }} {{ workout.likeCount ?? 0 }}</span>
+                </button>
                 <button
                   class="button is-small is-light"
                   @click="toggleComments(workout.id)"
