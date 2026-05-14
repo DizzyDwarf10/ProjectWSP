@@ -11,7 +11,8 @@
             <p class="has-text-grey-light">No activity from friends yet.</p>
           </div>
           <div v-else>
-            <div v-for="workout in store.chronologicalFeed" :key="workout.id" class="mb-4">
+            <div ref="scrollEl" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+            <div v-for="workout in visibleFeed" :key="workout.id" class="mb-4">
               <div class="box has-background-link has-text-centered">
                 <!-- Friend header -->
                 <div class="is-flex is-align-items-center is-justify-content-center mb-3" style="gap: 0.75rem;">
@@ -100,6 +101,10 @@
                 </div>
               </div>
             </div>
+            <div v-if="isLoading" class="has-text-centered py-3">
+              <span class="has-text-grey-light">Loading more...</span>
+            </div>
+            </div>
           </div>
         </div>
       </div>
@@ -109,12 +114,28 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useInfiniteScroll } from '@vueuse/core';
 import { currentUser } from '../pages/user';
 import { useFriendsActivityStore } from '../stores/friendsActivityStore';
 import { formatDistance } from '../utils/distanceUnit';
 import type { AppUser } from '../api/services';
 
 const store = useFriendsActivityStore();
+
+const PAGE_SIZE = 10;
+const visibleCount = ref(PAGE_SIZE);
+const scrollEl = ref<HTMLElement | null>(null);
+
+const visibleFeed = computed(() => store.chronologicalFeed.slice(0, visibleCount.value));
+
+const { isLoading } = useInfiniteScroll(
+  scrollEl,
+  () => { visibleCount.value += PAGE_SIZE; },
+  {
+    distance: 40,
+    canLoadMore: () => visibleCount.value < store.chronologicalFeed.length,
+  }
+);
 
 const openComments = ref<Set<number>>(new Set());
 const commentDrafts = reactive<Record<number, string>>({});
@@ -156,6 +177,6 @@ async function handleDeleteComment(activityId: number, commentId: number) {
 }
 
 onMounted(() => { void store.refresh(); });
-watch(() => currentUser.value?.id, () => { void store.refresh(); });
+watch(() => currentUser.value?.id, () => { visibleCount.value = PAGE_SIZE; void store.refresh(); });
 </script>
 

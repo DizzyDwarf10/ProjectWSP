@@ -54,8 +54,9 @@
         </form>
 
         <h2 class="title is-4 has-text-white has-text-centered mt-5">My Workouts</h2>
+        <div ref="scrollEl" style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
         <ul>
-          <li v-for="workout in userWorkoutsSorted" :key="workout.id" class="mb-4">
+          <li v-for="workout in visibleWorkouts" :key="workout.id" class="mb-4">
             <div class="box has-background-link has-text-centered">
               <strong class="has-text-white">{{ workout.exerciseTypeName }}</strong>
               <span v-if="workout.reps" class="has-text-grey-light">&nbsp;— Reps: {{ workout.reps }}</span>
@@ -110,6 +111,10 @@
             </div>
           </li>
         </ul>
+        <div v-if="isLoading" class="has-text-centered py-3">
+          <span class="has-text-grey-light">Loading more...</span>
+        </div>
+        </div>
 
         <div v-if="editingActivityId !== null" class="modal is-active">
           <div class="modal-background" @click="cancelEdit"></div>
@@ -177,6 +182,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useInfiniteScroll } from '@vueuse/core';
 import { distanceUnit, setDistanceUnit, toKm, fromKm, formatDistance } from '../utils/distanceUnit';
 import { type ExerciseType } from '../api/services';
 import { currentUser } from '../pages/user';
@@ -186,6 +192,21 @@ import { type Activity } from '../api/services';
 const activityStore = useActivityStore();
 const workoutTypes = computed(() => activityStore.exerciseTypes);
 const userWorkoutsSorted = computed(() => activityStore.sortedActivities);
+
+const PAGE_SIZE = 10;
+const visibleCount = ref(PAGE_SIZE);
+const scrollEl = ref<HTMLElement | null>(null);
+
+const visibleWorkouts = computed(() => userWorkoutsSorted.value.slice(0, visibleCount.value));
+
+const { isLoading } = useInfiniteScroll(
+  scrollEl,
+  () => { visibleCount.value += PAGE_SIZE; },
+  {
+    distance: 40,
+    canLoadMore: () => visibleCount.value < userWorkoutsSorted.value.length,
+  }
+);
 
 const openComments = ref<Set<number>>(new Set());
 const defaultAvatar = 'https://images.unsplash.com/photo-1672344048213-76b6e77304bd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGR1bWJlbGx8ZW58MHx8MHx8fDA%3D';
